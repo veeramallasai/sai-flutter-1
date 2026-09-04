@@ -16,6 +16,12 @@ class ApiEndpoints {
   static const String reviews = '/$apiVersion/reviews';
   static const String notifications = '/$apiVersion/notifications';
   static const String support = '/$apiVersion/support';
+  static const String passwordSetup = '/$apiVersion/auth/password-setup';
+
+  static String passwordSetupSend() => '$passwordSetup/send';
+  static String passwordSetupVerify() => '$passwordSetup/verify';
+  static String passwordSetupConfirm() => '$passwordSetup/confirm';
+  static String passwordSetupResend() => '$passwordSetup/resend';
 
   static String product(String productId) => '$products/${productId.trim()}';
   static String order(String orderId) => '$orders/${orderId.trim()}';
