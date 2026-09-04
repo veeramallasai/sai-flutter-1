@@ -87,7 +87,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          const CircleAvatar(radius: 34, backgroundColor: Color(0xFFEAF7EF), child: Icon(Icons.person_rounded, color: AppColors.primary, size: 34)),
+                          const CircleAvatar(radius: 34, backgroundColor: Color(0xFFE8F5E9), child: Icon(Icons.person_rounded, color: AppColors.primary, size: 34)),
                           const SizedBox(height: 18),
                           const Text('Complete your profile', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textPrimary, fontSize: 25, fontWeight: FontWeight.w900)),
                           const SizedBox(height: 7),

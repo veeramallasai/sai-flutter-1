@@ -21,7 +21,7 @@ class OrderSummaryCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF073D24),
+            color: const Color(0xFF1B5E20),
             borderRadius: BorderRadius.circular(22),
             boxShadow: const <BoxShadow>[
               BoxShadow(color: Color(0x26073D24), blurRadius: 22, offset: Offset(0, 10)),
@@ -32,7 +32,7 @@ class OrderSummaryCard extends StatelessWidget {
             children: <Widget>[
               const Row(
                 children: <Widget>[
-                  Icon(Icons.receipt_long_rounded, color: Color(0xFFFFD66B)),
+                  Icon(Icons.receipt_long_rounded, color: Color(0xFFFFB300)),
                   SizedBox(width: 9),
                   Expanded(
                     child: Text(

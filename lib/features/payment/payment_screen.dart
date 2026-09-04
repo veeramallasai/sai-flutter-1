@@ -1,10 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
-import '../../core/errors/error_handler.dart';
-import '../../core/services/order_backend_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/errors/app_exception.dart';
+import '../../core/services/order_backend_service.dart';
+import '../../data/models/cart_model.dart';
+import '../../data/repositories/cart_repository.dart';
 import 'widgets/pay_now_bar.dart';
 import 'widgets/payment_method_selector.dart';
 
@@ -46,15 +47,20 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   PaymentMethodType _selectedMethod = PaymentMethodType.cashOnDelivery;
-  final OrderBackendService _orderBackend = OrderBackendService();
   bool _processing = false;
 
-  User? get _user => FirebaseAuth.instance.currentUser;
+  // Optional delivery partner tip. This is stored with the order/payment
+  // and included in the final payable amount.
+  double _deliveryPartnerTip = 0;
+
+  final CartRepository _cartRepository = CartRepository();
+  final OrderBackendService _orderBackendService = OrderBackendService();
+
 
   bool get _isCashOnDelivery =>
       _selectedMethod == PaymentMethodType.cashOnDelivery;
 
-  double get _payableAmount {
+  double get _basePayableAmount {
     if (widget.grandTotal > 0) return widget.grandTotal;
 
     final double value =
@@ -62,25 +68,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return value < 0 ? 0 : value;
   }
 
+  double get _payableAmount => _basePayableAmount + _deliveryPartnerTip;
+
+
   void _selectMethod(PaymentMethodType method) {
     if (_processing) return;
-    if (method != PaymentMethodType.cashOnDelivery) {
-      _showMessage(
-        'Online payment will be enabled after the production gateway keys and webhook are configured.',
-      );
-      return;
-    }
     setState(() => _selectedMethod = method);
   }
 
   Future<void> _placeOrder() async {
-    final User? user = _user;
-
-    if (user == null) {
-      _showMessage('Please login to continue.', error: true);
-      return;
-    }
-
     if (_processing) return;
 
     if (widget.addressId.trim().isEmpty || widget.address.isEmpty) {
@@ -89,9 +85,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
 
     setState(() => _processing = true);
+
     try {
-      final BackendOrderResult order = await _orderBackend.placeOrder(
-        shoppingMode: widget.shoppingMode,
+      // Checkout and cart screens use the Spring Boot cart API. Payment must
+      // read the same source; reading the old Firestore carts collection here
+      // caused valid backend carts to appear empty at PLACE ORDER.
+      final CartModel cart = await _cartRepository.getCart();
+
+      if (cart.items.isEmpty) {
+        _showMessage('Your cart is empty.', error: true);
+        return;
+      }
+
+      final String normalizedMode = widget.shoppingMode == 'shop' ? 'shop' : 'home';
+      if (cart.items.any((item) => item.shoppingMode != normalizedMode)) {
+        _showMessage(
+          'Your cart contains products from another shopping mode.',
+          error: true,
+        );
+        return;
+      }
+
+      final BackendOrderResult result = await _orderBackendService.placeOrder(
+        shoppingMode: normalizedMode,
         paymentMethod: _selectedMethod.value,
         addressId: widget.addressId,
         address: widget.address,
@@ -99,33 +115,56 @@ class _PaymentScreenState extends State<PaymentScreen> {
         deliveryDate: widget.deliveryDate,
         deliverySlot: widget.deliverySlot,
         couponCode: widget.couponCode,
+        deliveryPartnerTip: _deliveryPartnerTip,
       );
 
+      // The backend checkout endpoint owns order creation and normally clears
+      // the cart transactionally. This extra clear is deliberately best-effort
+      // so a successfully created order is never reported as failed merely
+      // because the cart was already empty.
+      try {
+        await _cartRepository.clearCart();
+      } catch (_) {
+        // Ignore: order creation has already succeeded.
+      }
+
       if (!mounted) return;
+
+      final double backendAmount = result.totalAmount > 0
+          ? result.totalAmount
+          : _basePayableAmount;
+      final double confirmedTotal = backendAmount +
+          (result.deliveryPartnerTipAccepted ? 0 : _deliveryPartnerTip);
 
       Navigator.of(context).pushNamedAndRemoveUntil(
         AppRoutes.orderConfirmation,
         (Route<dynamic> route) => route.settings.name == AppRoutes.home,
         arguments: <String, dynamic>{
-          'orderId': order.orderId,
-          'orderNumber': order.orderNumber,
-          'shoppingMode': widget.shoppingMode,
-          'paymentMethod': order.paymentMethod,
-          'paymentStatus': order.paymentStatus,
+          'orderId': result.orderId,
+          'orderNumber': result.orderNumber,
+          'shoppingMode': normalizedMode,
+          'paymentId': result.paymentId,
+          'paymentMethod': result.paymentMethod,
+          'paymentStatus': result.paymentStatus,
           'transactionId': '',
-          'totalAmount': order.totalAmount,
-          'itemCount': order.itemCount,
+          'totalAmount': confirmedTotal,
+          'backendTotalAmount': backendAmount,
+          'deliveryPartnerTip': _deliveryPartnerTip,
+          'deliveryPartnerTipAcceptedByBackend':
+              result.deliveryPartnerTipAccepted,
+          'itemCount': result.itemCount > 0 ? result.itemCount : widget.itemCount,
           'deliveryMethod': widget.deliveryMethod,
           'deliveryDate': widget.deliveryDate,
           'deliverySlot': widget.deliverySlot,
           'address': widget.address,
         },
       );
-    } catch (error) {
-      _showMessage(
-        ErrorHandler.message(error),
-        error: true,
-      );
+    } on AppException catch (error) {
+      _showMessage(error.message, error: true);
+    } on StateError catch (error) {
+      _showMessage(error.message, error: true);
+    } catch (_) {
+      _showMessage('Unable to complete the order. Please try again.', error: true);
     } finally {
       if (mounted) setState(() => _processing = false);
     }
@@ -133,15 +172,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_user == null) {
-      return _LoginRequired(
-        onLogin: () => Navigator.of(context).pushNamedAndRemoveUntil(
-          AppRoutes.login,
-          (Route<dynamic> route) => false,
-        ),
-      );
-    }
-
     final bool desktop = MediaQuery.sizeOf(context).width >= 1000;
 
     return Scaffold(
@@ -220,7 +250,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             width: 43,
             height: 43,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(Icons.payments_rounded, color: AppColors.primary),
@@ -269,6 +299,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           onChanged: _selectMethod,
         ),
         const SizedBox(height: 20),
+        _buildDeliveryPartnerTip(),
+        const SizedBox(height: 20),
         _buildNotice(),
         const SizedBox(height: 16),
         _buildAddressCard(),
@@ -284,7 +316,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFF043D22), Color(0xFF17A45B)],
+          colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: const <BoxShadow>[
@@ -304,7 +336,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const Text(
                   'SECURE CHECKOUT',
                   style: TextStyle(
-                    color: Color(0xFFDDF4E7),
+                    color: Color(0xFFE8F5E9),
                     fontSize: 8.5,
                     letterSpacing: 0.7,
                     fontWeight: FontWeight.w900,
@@ -326,9 +358,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 Text(
                   _isCashOnDelivery
                       ? 'Place your fresh order now and pay during delivery.'
-                      : 'Online payment opens only after secure gateway activation.',
+                      : 'Online methods currently work in development test mode.',
                   style: const TextStyle(
-                    color: Color(0xFFDDF4E7),
+                    color: Color(0xFFE8F5E9),
                     fontSize: 11,
                     height: 1.45,
                     fontWeight: FontWeight.w600,
@@ -350,13 +382,121 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+
+  Widget _buildDeliveryPartnerTip() {
+    const List<double> tips = <double>[0, 20, 30, 50];
+
+    return _WhiteCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Tip your delivery partner',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      '100% of the tip goes to your delivery partner.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: tips.map((double tip) {
+              final bool selected = _deliveryPartnerTip == tip;
+              final String label = tip == 0 ? 'No tip' : '₹${tip.toStringAsFixed(0)}';
+
+              return ChoiceChip(
+                label: Text(label),
+                selected: selected,
+                onSelected: _processing
+                    ? null
+                    : (_) {
+                        setState(() {
+                          _deliveryPartnerTip = tip;
+                        });
+                      },
+                showCheckmark: false,
+                selectedColor: const Color(0xFFE8F5E9),
+                backgroundColor: Colors.white,
+                side: BorderSide(
+                  color: selected ? AppColors.primary : AppColors.border,
+                ),
+                labelStyle: TextStyle(
+                  color: selected
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              );
+            }).toList(growable: false),
+          ),
+          if (_deliveryPartnerTip > 0) ...<Widget>[
+            const SizedBox(height: 13),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFE082)),
+              ),
+              child: Text(
+                '₹${_deliveryPartnerTip.toStringAsFixed(0)} tip added • Thank you for supporting the delivery partner!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF7A5A00),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildNotice() {
-    final Color background = _isCashOnDelivery
-        ? const Color(0xFFEAF7EF)
-        : const Color(0xFFFFF7E8);
-    final Color border = _isCashOnDelivery
-        ? const Color(0xFFCDE7D6)
-        : const Color(0xFFF0D49B);
+    final Color background =
+        _isCashOnDelivery ? const Color(0xFFE8F5E9) : const Color(0xFFFFF7E8);
+    final Color border =
+        _isCashOnDelivery ? const Color(0xFFCDE7D6) : const Color(0xFFF0D49B);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -380,7 +520,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: Text(
               _isCashOnDelivery
                   ? 'Cash on Delivery does not require an online payment gateway.'
-                  : 'This option needs production gateway keys and verified webhooks before activation.',
+                  : 'This online option is currently in test mode. A real gateway can be connected later.',
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 10,
@@ -395,10 +535,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildAddressCard() {
-    final String label = _text(
-      widget.address['label'],
-      fallback: 'Delivery Address',
-    );
+    final String label = _text(widget.address['label'], fallback: 'Delivery Address');
     final String name = _text(widget.address['fullName']);
     String fullAddress = _text(widget.address['displayAddress']);
 
@@ -419,7 +556,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: <Widget>[
           const CircleAvatar(
             radius: 24,
-            backgroundColor: Color(0xFFEAF7EF),
+            backgroundColor: Color(0xFFE8F5E9),
             child: Icon(Icons.location_on_rounded, color: AppColors.primary),
           ),
           const SizedBox(width: 12),
@@ -448,9 +585,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ],
                 const SizedBox(height: 4),
                 Text(
-                  fullAddress.isEmpty
-                      ? 'Address details unavailable'
-                      : fullAddress,
+                  fullAddress.isEmpty ? 'Address details unavailable' : fullAddress,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 10,
@@ -480,10 +615,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          _SummaryRow(
-            label: 'Item subtotal',
-            value: _currency(widget.subtotal),
-          ),
+          _SummaryRow(label: 'Item subtotal', value: _currency(widget.subtotal)),
           if (widget.productSavings > 0) ...<Widget>[
             const SizedBox(height: 11),
             _SummaryRow(
@@ -510,6 +642,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 : _currency(widget.deliveryFee),
             highlight: widget.deliveryFee <= 0,
           ),
+          if (_deliveryPartnerTip > 0) ...<Widget>[
+            const SizedBox(height: 11),
+            _SummaryRow(
+              label: 'Delivery partner tip',
+              value: _currency(_deliveryPartnerTip),
+              highlight: true,
+            ),
+          ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 15),
             child: Divider(color: AppColors.border),
@@ -523,11 +663,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text(
-              _isCashOnDelivery ? 'Payment remains pending until delivery.' : 'Online payment becomes available after Razorpay keys are configured.',
+              _isCashOnDelivery
+                  ? 'Payment remains pending until delivery.'
+                  : 'Test payment will be recorded securely.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.primary,
@@ -540,6 +682,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
     );
   }
+
 
   void _showMessage(String message, {bool error = false}) {
     if (!mounted) return;

@@ -1,6 +1,5 @@
 package com.farmtohome.api.config;
 
-import com.farmtohome.api.auth.FirebaseTokenFilter;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +12,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -22,9 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
   @Bean
-  SecurityFilterChain securityFilterChain(
-      HttpSecurity http,
-      FirebaseTokenFilter firebaseTokenFilter) throws Exception {
+  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http
         .csrf(csrf -> csrf.disable())
         .cors(cors -> {})
@@ -33,6 +29,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers("/api/v1/auth/**", "/api/auth/**").permitAll()
             .requestMatchers("/api/**").authenticated()
             .anyRequest().denyAll())
         .exceptionHandling(exceptions -> exceptions
@@ -50,16 +47,15 @@ public class SecurityConfig {
                   "{\"success\":false,\"message\":\"Access denied.\","
                       + "\"code\":\"FORBIDDEN\"}");
             }))
-        .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 
   @Bean
   UserDetailsService userDetailsService() {
-    // Authentication is handled exclusively by verified Firebase ID tokens.
+    // Authentication is handled by the shared backend authentication flow.
     // Declaring this bean also disables Spring's generated development password.
     return username -> {
-      throw new UsernameNotFoundException("Password login is not enabled on this API.");
+      throw new UsernameNotFoundException("Spring UserDetailsService is not used directly by this API.");
     };
   }
 
@@ -81,3 +77,4 @@ public class SecurityConfig {
     return source;
   }
 }
+

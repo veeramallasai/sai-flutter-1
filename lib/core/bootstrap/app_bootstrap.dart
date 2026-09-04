@@ -1,15 +1,7 @@
-import 'package:firebase_core/firebase_core.dart';
-
-import '../../firebase_options.dart';
-
 class AppBootstrap {
   AppBootstrap._();
 
-  static Future<void> initialize() async {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-  }
+  /// Firebase initialization is intentionally disabled.
+  /// Phase-1 customer authentication now uses the shared Spring Boot JWT API.
+  static Future<void> initialize() async {}
 }

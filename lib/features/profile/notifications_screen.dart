@@ -228,13 +228,17 @@ class _NotificationTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: read ? Colors.white : const Color(0xFFEAF7EF),
+        color: read ? Colors.white : const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: read ? AppColors.border : const Color(0xFFBDE3CC),
         ),
       ),
-      child: ListTile(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
         onTap: onTap,
         leading: Container(
           width: 42,
@@ -260,6 +264,7 @@ class _NotificationTile extends StatelessWidget {
         ),
         trailing:
             read ? null : const Icon(Icons.circle, color: AppColors.primary, size: 8),
+        ),
       ),
     );
   }

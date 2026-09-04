@@ -547,7 +547,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           colors:
                           <Color>[
                             Color(
-                              0xFF0B7A3E,
+                              0xFF2E7D32,
                             ),
                             Color(
                               0xFF23A559,
@@ -737,7 +737,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                     BoxDecoration(
                       color:
                       const Color(
-                        0xFFF1F8F4,
+                        0xFFE8F5E9,
                       ),
                       borderRadius:
                       BorderRadius
@@ -956,7 +956,7 @@ class _ForgotPasswordBackground
                 colors:
                 <Color>[
                   Color(
-                    0xFFE8F6ED,
+                    0xFFE8F5E9,
                   ),
                   Color(
                     0xFFFFFBF2,

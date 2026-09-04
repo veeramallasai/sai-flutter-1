@@ -1,4 +1,4 @@
-server:
+2server:
   port: ${SERVER_PORT:8080}
   shutdown: graceful
 
@@ -9,6 +9,7 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/farm_to_home}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
       minimum-idle: 2
@@ -23,6 +24,9 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/farm_to_home}
+    user: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
     locations: classpath:db/migration
   jackson:
     default-property-inclusion: non_null
@@ -50,7 +54,6 @@ management:
         enabled: true
 
 app:
-  firebase-project-id: ${FIREBASE_PROJECT_ID:farm-to-home-8c520}
   cors-origins: "${CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*}"
   mail-from: ${MAIL_FROM:noreply@farmtohome.com}
 
@@ -58,3 +61,5 @@ logging:
   level:
     root: INFO
     org.springframework.security: WARN
+
+

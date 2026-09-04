@@ -38,7 +38,7 @@ class ShoppingModeSelector extends StatelessWidget {
                 Container(
                   width: 34,
                   height: 34,
-                  decoration: BoxDecoration(color: const Color(0xFFE8F6ED), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(10)),
                   child: Icon(home ? Icons.home_rounded : Icons.storefront_rounded, size: 19, color: AppColors.primary),
                 ),
                 const SizedBox(width: 10),

@@ -14,7 +14,7 @@ class AuthBackground extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[Color(0xFFF8FCF9), Color(0xFFEAF7EF), Color(0xFFFFFBF0)],
+            colors: <Color>[Color(0xFFF8FCF9), Color(0xFFE8F5E9), Color(0xFFFFFBF0)],
           ),
         ),
         child: Stack(

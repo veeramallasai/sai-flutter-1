@@ -41,7 +41,7 @@ class UserModel {
       UserModel.fromMap(doc.data() ?? <String, dynamic>{}, documentId: doc.id);
 
   factory UserModel.fromMap(Map<String, dynamic> map, {String documentId = ''}) => UserModel(
-        uid: _text(documentId.isNotEmpty ? documentId : map['uid'] ?? map['id']),
+        uid: _text(documentId.isNotEmpty ? documentId : map['uid'] ?? map['id'] ?? map['firebaseUid']),
         firstName: _text(map['firstName']),
         lastName: _text(map['lastName']),
         email: _text(map['email']).toLowerCase(),
@@ -49,7 +49,7 @@ class UserModel {
         photoUrl: _text(map['photoUrl'] ?? map['profileImage']),
         shoppingMode: _text(map['shoppingMode'], fallback: 'home').toLowerCase() == 'shop' ? 'shop' : 'home',
         isPhoneVerified: _boolean(map['isPhoneVerified'] ?? map['phoneVerified']),
-        isProfileComplete: _boolean(map['isProfileComplete'] ?? map['profileComplete']),
+        isProfileComplete: map.containsKey('isProfileComplete') || map.containsKey('profileComplete') ? _boolean(map['isProfileComplete'] ?? map['profileComplete']) : (_text(map['displayName']).isNotEmpty || _text(map['firstName']).isNotEmpty),
         isActive: _boolean(map['isActive'] ?? map['active'], fallback: true),
         createdAt: _date(map['createdAt']),
         updatedAt: _date(map['updatedAt']),

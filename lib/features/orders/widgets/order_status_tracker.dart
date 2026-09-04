@@ -98,8 +98,8 @@ class OrderStatusTracker extends StatelessWidget {
                     color: current
                         ? AppColors.primary
                         : completed
-                        ? const Color(0xFFE5F7ED)
-                        : const Color(0xFFF1F4F2),
+                        ? const Color(0xFFE8F5E9)
+                        : const Color(0xFFF5F5F5),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: active
@@ -176,7 +176,7 @@ class OrderStatusTracker extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE5F7ED),
+                            color: const Color(0xFFE8F5E9),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(

@@ -47,7 +47,7 @@ class PremiumSearchInput extends StatelessWidget {
                   children: <Widget>[
                     IconButton(onPressed: onFilterTap, icon: const Icon(Icons.tune_rounded)),
                     if (hasFilters)
-                      const Positioned(right: 7, top: 7, child: CircleAvatar(radius: 4, backgroundColor: Color(0xFFF4B400))),
+                      const Positioned(right: 7, top: 7, child: CircleAvatar(radius: 4, backgroundColor: Color(0xFFFFB300))),
                   ],
                 ),
               ],

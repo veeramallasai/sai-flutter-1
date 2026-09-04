@@ -42,7 +42,7 @@ class BannerRepository {
           .where((BannerModel banner) => banner.isVisible)
           .toList(growable: true)
         ..sort((BannerModel a, BannerModel b) => a.priority.compareTo(b.priority));
-      return values.isEmpty ? localBanners : List<BannerModel>.unmodifiable(values);
+      return List<BannerModel>.unmodifiable(values);
     } catch (_) {
       return localBanners;
     }

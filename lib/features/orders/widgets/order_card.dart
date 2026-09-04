@@ -79,7 +79,7 @@ class OrderCard extends StatelessWidget {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            color: const Color(0xFFEAF7EF),
+            color: const Color(0xFFE8F5E9),
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Icon(
@@ -156,7 +156,7 @@ class OrderCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7FAF8),
+          color: const Color(0xFFF9FAF9),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
@@ -502,8 +502,8 @@ _OrderStatusStyle _statusStyle(String status) {
   switch (status) {
     case 'delivered':
       return const _OrderStatusStyle(
-        foreground: Color(0xFF08783E),
-        background: Color(0xFFE5F7ED),
+        foreground: Color(0xFF2E7D32),
+        background: Color(0xFFE8F5E9),
         icon: Icons.check_circle_rounded,
       );
     case 'cancelled':
@@ -529,15 +529,15 @@ _OrderStatusStyle _statusStyle(String status) {
       );
     case 'confirmed':
       return const _OrderStatusStyle(
-        foreground: Color(0xFF08783E),
-        background: Color(0xFFE5F7ED),
+        foreground: Color(0xFF2E7D32),
+        background: Color(0xFFE8F5E9),
         icon: Icons.verified_rounded,
       );
     case 'placed':
     default:
       return const _OrderStatusStyle(
-        foreground: Color(0xFF08783E),
-        background: Color(0xFFE5F7ED),
+        foreground: Color(0xFF2E7D32),
+        background: Color(0xFFE8F5E9),
         icon: Icons.schedule_rounded,
       );
   }

@@ -24,9 +24,12 @@ class SessionProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   void listen() {
+    if (_disposed) return;
     _subscription?.cancel();
     _isLoading = true;
+    _errorMessage = null;
     _notify();
+
     _subscription = _repository.watchSession().listen(
       (AuthSessionModel value) {
         _session = value;
@@ -56,6 +59,7 @@ class SessionProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_disposed) return;
     _disposed = true;
     _subscription?.cancel();
     super.dispose();

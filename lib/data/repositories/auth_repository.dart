@@ -24,7 +24,7 @@ class AuthRepository {
       password: password,
     );
     await _recordLogin(result.user);
-    await UserRepository(auth: _auth, firestore: _firestore).syncCurrentUser();
+    await UserRepository().syncCurrentUser();
     return result;
   }
 
@@ -60,8 +60,7 @@ class AuthRepository {
         },
         SetOptions(merge: true),
       );
-      if (!user.emailVerified) await user.sendEmailVerification();
-      await UserRepository(auth: _auth, firestore: _firestore).syncCurrentUser();
+      await UserRepository().syncCurrentUser();
     }
     return result;
   }
@@ -69,7 +68,7 @@ class AuthRepository {
   Future<UserCredential> signInWithCredential(AuthCredential credential) async {
     final UserCredential result = await _auth.signInWithCredential(credential);
     await _recordLogin(result.user);
-    await UserRepository(auth: _auth, firestore: _firestore).syncCurrentUser();
+    await UserRepository().syncCurrentUser();
     return result;
   }
 

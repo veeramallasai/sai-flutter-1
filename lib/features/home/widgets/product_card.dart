@@ -35,7 +35,7 @@ class ProductQuantityControl extends StatelessWidget {
           onPressed: enabled && !loading ? onAdd : null,
           style: FilledButton.styleFrom(
             padding: EdgeInsets.zero,
-            backgroundColor: const Color(0xFF073D24),
+            backgroundColor: const Color(0xFF1B5E20),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: loading
@@ -58,7 +58,7 @@ class ProductQuantityControl extends StatelessWidget {
       width: compact ? 103 : 112,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: <Color>[Color(0xFF073D24), Color(0xFF0B7A3E)],
+          colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: const <BoxShadow>[
@@ -148,7 +148,7 @@ class _ImageFallback extends StatelessWidget {
   const _ImageFallback();
   @override
   Widget build(BuildContext context) => const ColoredBox(
-        color: Color(0xFFF1F8F4),
+        color: Color(0xFFE8F5E9),
         child: Center(child: Icon(Icons.eco_rounded, color: AppColors.primary, size: 48)),
       );
 }

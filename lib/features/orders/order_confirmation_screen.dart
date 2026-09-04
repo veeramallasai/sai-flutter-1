@@ -129,6 +129,21 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
     return _text(_order['paymentMethod']) == 'cash_on_delivery';
   }
 
+  double get _deliveryPartnerTip => _toDouble(_order['deliveryPartnerTip']);
+
+  double get _displayTotalAmount {
+    final double current = _toDouble(_order['totalAmount']);
+    final double backend = _toDouble(_order['backendTotalAmount']);
+    if (_deliveryPartnerTip <= 0) return current;
+
+    // When full order details are refreshed, older backend builds can return a
+    // base total that does not contain the client-side delivery partner tip.
+    if (backend > 0 && current <= backend + 0.001) {
+      return backend + _deliveryPartnerTip;
+    }
+    return current;
+  }
+
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.sizeOf(context).width;
@@ -284,7 +299,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7EF),
+        color: const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(17),
       ),
       child: const Row(
@@ -363,9 +378,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
           const Divider(height: 24),
           _detailRow(
             'Grand total',
-            _currency(_toDouble(
-              _order['totalAmount'],
-            )),
+            _currency(_displayTotalAmount),
             important: true,
             valueColor: AppColors.primary,
           ),
@@ -401,7 +414,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Row(
@@ -452,10 +465,16 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
           ),
           if (transactionId.isNotEmpty)
             _detailRow('Transaction ID', transactionId),
+          if (_deliveryPartnerTip > 0)
+            _detailRow(
+              'Delivery partner tip',
+              _currency(_deliveryPartnerTip),
+              valueColor: AppColors.primary,
+            ),
           const Divider(height: 24),
           _detailRow(
             _isCashOnDelivery ? 'Amount to pay' : 'Amount paid',
-            _currency(_toDouble(_order['totalAmount'])),
+            _currency(_displayTotalAmount),
             important: true,
             valueColor: AppColors.primary,
           ),
@@ -542,7 +561,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7EF),
+                  color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 22),
@@ -619,7 +638,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
             child: FilledButton.icon(
               onPressed: _openPayNow,
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF073D24),
+                backgroundColor: const Color(0xFF1B5E20),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
               ),
               icon: const Icon(Icons.lock_rounded),

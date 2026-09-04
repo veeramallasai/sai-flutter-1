@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
@@ -9,8 +8,6 @@ class PrivacyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
-    final bool emailVerified = user?.emailVerified == true;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Privacy & Security')),
@@ -27,7 +24,7 @@ class PrivacyScreen extends StatelessWidget {
             ),
             child: Row(
               children: <Widget>[
-                const Icon(Icons.shield_rounded, color: Color(0xFFFFD66B), size: 45),
+                const Icon(Icons.shield_rounded, color: Color(0xFFFFB300), size: 45),
                 const SizedBox(width: 15),
                 Expanded(
                   child: Column(
@@ -39,9 +36,7 @@ class PrivacyScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        emailVerified
-                            ? 'Verified email • Firebase secured'
-                            : 'Firebase secured authentication',
+                        'JWT session • Backend secured',
                         style: const TextStyle(color: Color(0xFFC9E7D6), fontSize: 9.5),
                       ),
                     ],
@@ -54,7 +49,7 @@ class PrivacyScreen extends StatelessWidget {
           const _PrivacyCard(
             icon: Icons.lock_rounded,
             title: 'Secure authentication',
-            text: 'Your password and sign-in credentials are handled securely through Firebase Authentication.',
+            text: 'Your password and sign-in session are handled by the secure Farm To Home backend using OTP setup and JWT authentication.',
           ),
           const _PrivacyCard(
             icon: Icons.location_on_rounded,
@@ -106,7 +101,7 @@ class _PrivacyCard extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF7EF),
+                color: const Color(0xFFE8F5E9),
                 borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(icon, color: AppColors.primary),

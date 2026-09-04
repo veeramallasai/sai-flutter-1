@@ -1,12 +1,9 @@
-import 'dart:async';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../core/auth/local_auth_session.dart';
+import '../core/network/api_client.dart';
 import '../features/auth/login_screen.dart';
 import '../features/home/home_screen.dart';
-import '../data/repositories/user_repository.dart';
-import '../core/services/notification_service.dart';
 
 class SessionGate extends StatefulWidget {
   const SessionGate({super.key});
@@ -16,88 +13,35 @@ class SessionGate extends StatefulWidget {
 }
 
 class _SessionGateState extends State<SessionGate> {
-  String _syncUid = '';
-  Future<void>? _syncFuture;
+  late Future<bool> _sessionFuture;
 
-  Future<void> _sync(User user) {
-    if (_syncUid != user.uid || _syncFuture == null) {
-      _syncUid = user.uid;
-      _syncFuture = _syncAccount(user);
-    }
-    return _syncFuture!;
+  @override
+  void initState() {
+    super.initState();
+    _sessionFuture = _validateSession();
   }
 
-  Future<void> _syncAccount(User user) async {
-    await UserRepository().syncCurrentUser();
-    unawaited(NotificationService().registerCurrentDevice());
+  Future<bool> _validateSession() async {
+    if (!await LocalAuthSession.hasToken) return false;
+    try {
+      await ApiClient().get('/api/v1/auth/me');
+      return true;
+    } catch (error) {
+      debugPrint('Session validation failed: $error');
+      await LocalAuthSession.clear();
+      return false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (
-          BuildContext context,
-          AsyncSnapshot<User?> snapshot,
-          ) {
-        if (snapshot.connectionState ==
-            ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
+    return FutureBuilder<bool>(
+      future: _sessionFuture,
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-
-        final User? user = snapshot.data;
-        if (user == null) {
-          _syncUid = '';
-          _syncFuture = null;
-          return const LoginScreen();
-        }
-
-        return FutureBuilder<void>(
-          future: _sync(user),
-          builder: (BuildContext context, AsyncSnapshot<void> syncSnapshot) {
-            if (syncSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (syncSnapshot.hasError) {
-              return Scaffold(
-                body: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        const Icon(Icons.cloud_off_rounded, size: 46),
-                        const SizedBox(height: 14),
-                        const Text(
-                          'Unable to connect your account to Farm To Home.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _syncFuture = UserRepository().syncCurrentUser();
-                            });
-                          },
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('RETRY'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-            return const HomeScreen();
-          },
-        );
+        return snapshot.data == true ? const HomeScreen() : const LoginScreen();
       },
     );
   }

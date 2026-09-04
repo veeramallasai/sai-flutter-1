@@ -148,13 +148,13 @@ class _SupportHero extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF073D24), Color(0xFF14884A)],
+            colors: <Color>[Color(0xFF1B5E20), Color(0xFF14884A)],
           ),
           borderRadius: BorderRadius.circular(26),
         ),
         child: const Row(
           children: <Widget>[
-            Icon(Icons.support_agent_rounded, color: Color(0xFFFFD66B), size: 44),
+            Icon(Icons.support_agent_rounded, color: Color(0xFFFFB300), size: 44),
             SizedBox(width: 15),
             Expanded(
               child: Column(

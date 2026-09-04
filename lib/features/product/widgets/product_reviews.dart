@@ -140,7 +140,7 @@ class _ReviewTile extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 17,
-                backgroundColor: const Color(0xFFEAF7EF),
+                backgroundColor: const Color(0xFFE8F5E9),
                 child: Text(
                   review.customerName.trim().isEmpty
                       ? 'C'
@@ -228,7 +228,7 @@ class _RatingStars extends StatelessWidget {
       children: List<Widget>.generate(5, (int index) {
         return Icon(
           index < rating.round() ? Icons.star_rounded : Icons.star_border_rounded,
-          color: const Color(0xFFF4B400),
+          color: const Color(0xFFFFB300),
           size: size,
         );
       }),

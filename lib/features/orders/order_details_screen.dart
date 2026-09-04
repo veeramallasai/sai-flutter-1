@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/auth/local_auth_session.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/review_model.dart';
 import '../../data/repositories/review_repository.dart';
@@ -172,7 +172,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             width: 43,
             height: 43,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(
@@ -307,7 +307,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFF043D22), Color(0xFF17A45B)],
+          colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
         ),
         borderRadius: BorderRadius.circular(25),
         boxShadow: const <BoxShadow>[
@@ -346,7 +346,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 Text(
                   _statusMessage(order.status),
                   style: const TextStyle(
-                    color: Color(0xFFDDF4E7),
+                    color: Color(0xFFE8F5E9),
                     fontSize: 10.5,
                     height: 1.4,
                     fontWeight: FontWeight.w600,
@@ -370,7 +370,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             _formatDate(order.createdAt),
             textAlign: TextAlign.right,
             style: const TextStyle(
-              color: Color(0xFFDDF4E7),
+              color: Color(0xFFE8F5E9),
               fontSize: 9,
               fontWeight: FontWeight.w700,
             ),
@@ -454,7 +454,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: <Color>[Color(0xFFEAF7EF), Color(0xFFFFFBEC)],
+                colors: <Color>[Color(0xFFE8F5E9), Color(0xFFFFFBEC)],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFCDE5D7)),
@@ -746,13 +746,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       : () async {
                           setDialogState(() => saving = true);
                           try {
-                            final User? user = FirebaseAuth.instance.currentUser;
-                            final String userName = _reviewUserName(user);
+                            final String userId = (await LocalAuthSession.userId())?.trim() ?? '';
+                            final String userName = await _reviewUserName();
                             await _reviewRepository.saveReview(
                               ReviewModel(
                                 id: '',
                                 productId: productId,
-                                userId: user?.uid ?? '',
+                                userId: userId,
                                 userName: userName,
                                 rating: rating,
                                 comment: commentController.text.trim(),
@@ -945,7 +945,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               index <= rating.round()
                   ? Icons.star_rounded
                   : Icons.star_border_rounded,
-              color: const Color(0xFFFFB000),
+              color: const Color(0xFFFFB300),
               size: 34,
             ),
           ),
@@ -953,16 +953,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  String _reviewUserName(User? user) {
-    final String displayName = user?.displayName?.trim() ?? '';
+  Future<String> _reviewUserName() async {
+    final String displayName = (await LocalAuthSession.displayName())?.trim() ?? '';
     if (displayName.isNotEmpty) return displayName;
-
-    final String email = user?.email?.trim() ?? '';
+    final String email = (await LocalAuthSession.email())?.trim() ?? '';
     if (email.contains('@')) {
       final String name = email.split('@').first.trim();
       if (name.isNotEmpty) return name;
     }
-
     return 'Verified customer';
   }
 
@@ -985,7 +983,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Row(
@@ -1074,7 +1072,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             FilledButton.icon(
               onPressed: () => _payNow(order),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF073D24),
+                backgroundColor: const Color(0xFF1B5E20),
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
@@ -1167,7 +1165,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7EF),
+                  color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 21),

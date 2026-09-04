@@ -36,7 +36,7 @@ class ShopOwnerBulkSelector extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5FAF7),
+        color: const Color(0xFFF9FAF9),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFD6EBDD)),
       ),
@@ -77,7 +77,7 @@ class ShopOwnerBulkSelector extends StatelessWidget {
                 selected: selected,
                 onSelected: (_) => onPackSizeChanged(size),
                 showCheckmark: false,
-                selectedColor: const Color(0xFFE4F6EB),
+                selectedColor: const Color(0xFFE8F5E9),
                 backgroundColor: Colors.white,
                 side: BorderSide(
                   color: selected ? AppColors.primary : AppColors.border,

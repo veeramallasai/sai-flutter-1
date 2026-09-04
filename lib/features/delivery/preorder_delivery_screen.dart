@@ -100,7 +100,7 @@ class _PreorderDeliveryScreenState extends State<PreorderDeliveryScreen> {
           padding: const EdgeInsets.all(16),
           child: FilledButton.icon(
             onPressed: _continue,
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF073D24), minimumSize: const Size.fromHeight(56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B5E20), minimumSize: const Size.fromHeight(56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
             icon: const Icon(Icons.eco_rounded),
             label: const Text('CONTINUE • FREE DELIVERY'),
           ),
@@ -116,7 +116,7 @@ class _PreorderHero extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: <Color>[Color(0xFF052F1C), Color(0xFF0B7A3E), Color(0xFF28A964)]),
+          gradient: const LinearGradient(colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF28A964)]),
           borderRadius: BorderRadius.circular(26),
           boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x280B7A3E), blurRadius: 25, offset: Offset(0, 12))],
         ),

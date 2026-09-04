@@ -20,7 +20,7 @@ class FarmerRatingWidget extends StatelessWidget {
         ...List<Widget>.generate(5, (int index) {
           return Icon(
             index < rating.round() ? Icons.star_rounded : Icons.star_border_rounded,
-            color: const Color(0xFFF4B400),
+            color: const Color(0xFFFFB300),
             size: 15,
           );
         }),

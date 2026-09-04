@@ -2,7 +2,6 @@ package com.farmtohome.api.user;
 
 import com.farmtohome.api.common.ApiException;
 import com.farmtohome.api.common.ApiResponse;
-import com.google.firebase.auth.FirebaseToken;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -25,17 +24,17 @@ public class AppUserController {
   ApiResponse<AppUserDtos.Profile> sync(
       Authentication authentication,
       @Valid @RequestBody AppUserDtos.SyncRequest request) {
-    return ApiResponse.ok(users.sync(token(authentication), request), "Profile synchronized.");
+    if (authentication == null || authentication.getName() == null) {
+      throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid login session.");
+    }
+    return ApiResponse.ok(users.sync(authentication.getName(), request), "Profile synchronized.");
   }
 
   @GetMapping("/me")
   ApiResponse<AppUserDtos.Profile> me(Authentication authentication) {
+    if (authentication == null || authentication.getName() == null) {
+      throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid login session.");
+    }
     return ApiResponse.ok(users.get(authentication.getName()));
-  }
-
-  private FirebaseToken token(Authentication authentication) {
-    Object value = authentication == null ? null : authentication.getCredentials();
-    if (value instanceof FirebaseToken firebaseToken) return firebaseToken;
-    throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid login session.");
   }
 }

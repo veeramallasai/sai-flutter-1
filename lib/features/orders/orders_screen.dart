@@ -73,7 +73,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             width: 43,
             height: 43,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(
@@ -218,8 +218,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            Color(0xFF043D22),
-            Color(0xFF17A45B),
+            Color(0xFF1B5E20),
+            Color(0xFF2E7D32),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -283,7 +283,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           label,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            color: Color(0xFFDDF4E7),
+            color: Color(0xFFE8F5E9),
             fontSize: 9,
             fontWeight: FontWeight.w700,
           ),
@@ -445,7 +445,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               width: 100,
               height: 100,
               decoration: const BoxDecoration(
-                color: Color(0xFFEAF7EF),
+                color: Color(0xFFE8F5E9),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -549,7 +549,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   decoration: InputDecoration(
                     hintText: 'Reason for cancellation (optional)',
                     filled: true,
-                    fillColor: const Color(0xFFF7FAF8),
+                    fillColor: const Color(0xFFF9FAF9),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
                       borderSide: const BorderSide(color: AppColors.border),

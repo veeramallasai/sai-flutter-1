@@ -31,9 +31,9 @@ class ProfileHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            Color(0xFF032A19),
-            Color(0xFF08723B),
-            Color(0xFF20A45A),
+            Color(0xFF1B5E20),
+            Color(0xFF2E7D32),
+            Color(0xFF2E7D32),
           ],
         ),
         borderRadius: BorderRadius.circular(30),
@@ -183,7 +183,7 @@ class _Avatar extends StatelessWidget {
       _fallback();
 
   Widget _fallback() => const ColoredBox(
-        color: Color(0xFFEAF7EF),
+        color: Color(0xFFE8F5E9),
         child: Icon(Icons.person_rounded, color: AppColors.primary, size: 40),
       );
 }
@@ -202,7 +202,7 @@ class _ModePill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.verified_rounded, color: Color(0xFFFFD66B), size: 15),
+            const Icon(Icons.verified_rounded, color: Color(0xFFFFB300), size: 15),
             const SizedBox(width: 5),
             Text(
               label,
@@ -226,7 +226,7 @@ class _TrustStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
         children: <Widget>[
-          Icon(icon, color: const Color(0xFFFFD66B), size: 18),
+          Icon(icon, color: const Color(0xFFFFB300), size: 18),
           const SizedBox(height: 5),
           Text(
             value,

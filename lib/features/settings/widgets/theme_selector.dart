@@ -19,7 +19,7 @@ class ThemeSelector extends StatelessWidget {
             child: _ThemeOption(
               value: 'fresh',
               title: 'Fresh',
-              colors: const <Color>[Color(0xFFFFFFFF), Color(0xFFEAF7EF)],
+              colors: const <Color>[Color(0xFFFFFFFF), Color(0xFFE8F5E9)],
               selected: selected == 'fresh',
               onTap: onChanged,
             ),
@@ -29,7 +29,7 @@ class ThemeSelector extends StatelessWidget {
             child: _ThemeOption(
               value: 'emerald',
               title: 'Emerald',
-              colors: const <Color>[Color(0xFF073D24), Color(0xFF159253)],
+              colors: const <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
               selected: selected == 'emerald',
               onTap: onChanged,
             ),

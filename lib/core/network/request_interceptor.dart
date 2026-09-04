@@ -26,7 +26,13 @@ class RequestInterceptor {
       ...defaultHeaders,
       ...?headers,
     });
-    final String token = (await accessTokenProvider?.call())?.trim() ?? '';
+    String token = '';
+    try {
+      token = (await accessTokenProvider?.call())?.trim() ?? '';
+    } catch (_) {
+      // A storage failure must not crash public API requests or the UI.
+      token = '';
+    }
     if (token.isNotEmpty) request.headers['Authorization'] = 'Bearer $token';
     if (body != null) {
       request.body = body is String ? body : jsonEncode(body);

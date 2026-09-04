@@ -1,10 +1,7 @@
 package com.farmtohome.api.auth;
 
 import com.farmtohome.api.common.ApiException;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
-import com.google.firebase.auth.UserRecord;
+
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -30,7 +27,6 @@ public class EmailOtpService {
 
   private final JdbcTemplate jdbc;
   private final JavaMailSender mailSender;
-  private final FirebaseAuth firebaseAuth;
   private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
   private final SecureRandom random = new SecureRandom();
   private final String mailFrom;
@@ -38,11 +34,9 @@ public class EmailOtpService {
   public EmailOtpService(
       JdbcTemplate jdbc,
       JavaMailSender mailSender,
-      FirebaseApp firebaseApp,
       @Value("${app.mail-from}") String mailFrom) {
     this.jdbc = jdbc;
     this.mailSender = mailSender;
-    this.firebaseAuth = FirebaseAuth.getInstance(firebaseApp);
     this.mailFrom = mailFrom;
   }
 
@@ -188,14 +182,7 @@ public class EmailOtpService {
         WHERE firebase_uid = ?
         """, uid);
 
-    try {
-      firebaseAuth.updateUser(
-          new UserRecord.UpdateRequest(uid).setEmailVerified(true));
-    } catch (FirebaseAuthException error) {
-      throw new ApiException(
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          "Email verified in database, but Firebase verification sync failed.");
-    }
+
 
     return Map.of(
         "email", mask(user.email()),
@@ -249,7 +236,7 @@ public class EmailOtpService {
     } catch (RuntimeException error) {
       throw new ApiException(
           HttpStatus.SERVICE_UNAVAILABLE,
-          "Unable to send verification email right now.");
+          "Failed to send email via SMTP: " + error.getMessage() + ". Check Gmail App Password in backend settings.");
     }
   }
 

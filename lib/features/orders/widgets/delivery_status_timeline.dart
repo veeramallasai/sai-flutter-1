@@ -49,7 +49,7 @@ class DeliveryStatusTimeline extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: active
                             ? AppColors.primary
-                            : const Color(0xFFF1F4F2),
+                            : const Color(0xFFF5F5F5),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: active

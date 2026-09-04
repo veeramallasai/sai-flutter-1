@@ -69,7 +69,7 @@ class _DeliveryMethodScreenState extends State<DeliveryMethodScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F5),
+      backgroundColor: const Color(0xFFF9FAF9),
       appBar: AppBar(
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +90,7 @@ class _DeliveryMethodScreenState extends State<DeliveryMethodScreen> {
             _DeliveryChoice(
               selected: _selectedMethod == 'quick',
               icon: Icons.bolt_rounded,
-              iconColor: const Color(0xFFF7A600),
+              iconColor: const Color(0xFFFFB300),
               title: 'Quick delivery',
               badge: widget.total >= 499 ? 'FREE' : '₹49',
               time: '30–60 minutes',
@@ -133,7 +133,7 @@ class _DeliveryMethodScreenState extends State<DeliveryMethodScreen> {
         child: FilledButton.icon(
           onPressed: _continue,
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF073D24),
+            backgroundColor: const Color(0xFF1B5E20),
             minimumSize: const Size.fromHeight(56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           ),
@@ -150,7 +150,7 @@ class _DeliveryMethodScreenState extends State<DeliveryMethodScreen> {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[Color(0xFF052F1C), Color(0xFF0B7A3E), Color(0xFF24A75E)],
+            colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF2E7D32)],
           ),
           borderRadius: BorderRadius.circular(27),
           boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x250B7A3E), blurRadius: 26, offset: Offset(0, 12))],
@@ -173,7 +173,7 @@ class _DeliveryMethodScreenState extends State<DeliveryMethodScreen> {
                   const Text('Every order is quality checked, sealed and trackable.', style: TextStyle(color: Color(0xFFD1EFDE), fontSize: 10, height: 1.4, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 9),
                   const Row(children: <Widget>[
-                    Icon(Icons.shield_rounded, color: Color(0xFFFFD66B), size: 14),
+                    Icon(Icons.shield_rounded, color: Color(0xFFFFB300), size: 14),
                     SizedBox(width: 5),
                     Text('Freshness promise', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
                   ]),
@@ -235,7 +235,7 @@ class _DeliveryChoice extends StatelessWidget {
                         children: <Widget>[
                           Row(children: <Widget>[
                             Expanded(child: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w900))),
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5), decoration: BoxDecoration(color: selected ? const Color(0xFFE6F6ED) : const Color(0xFFF1F4F2), borderRadius: BorderRadius.circular(12)), child: Text(badge, style: TextStyle(color: selected ? AppColors.primary : AppColors.textPrimary, fontSize: 9, fontWeight: FontWeight.w900))),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5), decoration: BoxDecoration(color: selected ? const Color(0xFFE6F6ED) : const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(12)), child: Text(badge, style: TextStyle(color: selected ? AppColors.primary : AppColors.textPrimary, fontSize: 9, fontWeight: FontWeight.w900))),
                           ]),
                           const SizedBox(height: 4),
                           Text(time, style: TextStyle(color: selected ? AppColors.primary : AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w800)),

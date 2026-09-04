@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
@@ -29,30 +27,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        final DocumentSnapshot<Map<String, dynamic>> snapshot =
-            await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        final Map<String, dynamic> data = snapshot.data() ?? <String, dynamic>{};
-        _orderUpdates = data['orderNotifications'] != false;
-        _offers = data['offerNotifications'] != false;
-        _language = (data['language'] ?? 'English').toString();
-        _theme = (data['appTheme'] ?? 'fresh').toString();
-      } catch (_) {
-        // Local defaults keep settings available if sync is temporarily unavailable.
-      }
-    }
+    // Preferences are intentionally kept client-side until the backend
+    // preference contract is enabled. This avoids any Firebase dependency.
     if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _save(Map<String, dynamic> values) async {
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-      <String, dynamic>{...values, 'updatedAt': FieldValue.serverTimestamp()},
-      SetOptions(merge: true),
-    );
+    // The visible preference is already applied in state. Backend notification
+    // preferences can be wired here without changing the screen contract.
   }
 
   @override
@@ -169,13 +151,13 @@ class _SettingsHero extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF073D24), Color(0xFF159253)],
+            colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
           ),
           borderRadius: BorderRadius.circular(24),
         ),
         child: const Row(
           children: <Widget>[
-            Icon(Icons.tune_rounded, color: Color(0xFFFFD66B), size: 38),
+            Icon(Icons.tune_rounded, color: Color(0xFFFFB300), size: 38),
             SizedBox(width: 13),
             Expanded(
               child: Column(
@@ -235,13 +217,17 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(children: children),
       ),
-      child: Column(children: children),
     );
   }
 }

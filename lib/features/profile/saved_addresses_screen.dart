@@ -129,13 +129,13 @@ class _AddressHero extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF073D24), Color(0xFF159253)],
+            colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
           ),
           borderRadius: BorderRadius.circular(23),
         ),
         child: const Row(
           children: <Widget>[
-            Icon(Icons.location_on_rounded, color: Color(0xFFFFD66B), size: 35),
+            Icon(Icons.location_on_rounded, color: Color(0xFFFFB300), size: 35),
             SizedBox(width: 13),
             Expanded(
               child: Column(

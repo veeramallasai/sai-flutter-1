@@ -302,7 +302,7 @@ class _CartHero extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFF04361F), Color(0xFF0B7A3E), Color(0xFF24A75E)],
+          colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF2E7D32)],
         ),
         borderRadius: BorderRadius.circular(25),
         boxShadow: const <BoxShadow>[
@@ -336,7 +336,7 @@ class _CartHero extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.verified_rounded, color: Color(0xFFFFD66B), size: 24),
+              const Icon(Icons.verified_rounded, color: Color(0xFFFFB300), size: 24),
             ],
           ),
           const SizedBox(height: 16),
@@ -346,7 +346,7 @@ class _CartHero extends StatelessWidget {
               value: progress,
               minHeight: 7,
               backgroundColor: Colors.white.withValues(alpha: 0.18),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD66B)),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFB300)),
             ),
           ),
           const SizedBox(height: 8),

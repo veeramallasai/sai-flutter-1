@@ -1,8 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../data/models/category_model.dart';
+import '../../data/repositories/category_repository.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({
@@ -16,10 +18,14 @@ class CategoriesScreen extends StatefulWidget {
   State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> {
+class _CategoriesScreenState extends State<CategoriesScreen>
+    with WidgetsBindingObserver {
   late String _shoppingMode;
+  final CategoryRepository _categoryRepository = CategoryRepository();
+  List<_CategoryData> _categoryItems = <_CategoryData>[];
+  Timer? _categoryRefreshTimer;
 
-  static const List<_CategoryData> _categories = <_CategoryData>[
+  static const List<_CategoryData> _fallbackCategories = <_CategoryData>[
     _CategoryData(
       id: 'vegetables',
       title: 'Vegetables',
@@ -28,7 +34,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       'Daily essentials, leafy greens, roots and fresh vegetables.',
       image: 'assets/images/categories/vegetables.png',
       fallbackIcon: Icons.eco_rounded,
-      backgroundColor: Color(0xFFE8F6ED),
+      backgroundColor: Color(0xFFE8F5E9),
       accentColor: Color(0xFF168447),
     ),
     _CategoryData(
@@ -73,61 +79,68 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _shoppingMode =
     widget.initialShoppingMode == 'shop' ? 'shop' : 'home';
 
+    WidgetsBinding.instance.addObserver(this);
+    _categoryItems = List<_CategoryData>.from(_fallbackCategories);
     _loadSavedMode();
+    _loadCategories();
+    _categoryRefreshTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _loadCategories(),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadCategories();
+    }
+  }
+
+  @override
+  void dispose() {
+    _categoryRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _loadSavedMode() async {
-    try {
-      final User? user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      final DocumentSnapshot<Map<String, dynamic>> snapshot =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final String value =
-      (snapshot.data()?['shoppingMode'] ?? _shoppingMode).toString();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (value == 'home' || value == 'shop') {
-        setState(() {
-          _shoppingMode = value;
-        });
-      }
-    } catch (_) {
-      // Current selected mode remains active.
-    }
+    // JWT/local session flow: keep the current mode without Firebase calls.
   }
 
   Future<void> _saveMode(String mode) async {
+    // The selected mode is already applied in UI state.
+  }
+
+  Future<void> _loadCategories() async {
     try {
-      final User? user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(
-        <String, dynamic>{
-          'shoppingMode': mode,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      final List<CategoryModel> values = await _categoryRepository.getCategories();
+      if (!mounted) return;
+      setState(() {
+        _categoryItems = values.map(_fromBackendCategory).toList(growable: false);
+      });
     } catch (_) {
-      // UI mode continues even if Firestore is temporarily unavailable.
+      // Keep bundled category cards as an offline fallback.
     }
+  }
+
+  _CategoryData _fromBackendCategory(CategoryModel category) {
+    _CategoryData? fallback;
+    for (final _CategoryData item in _fallbackCategories) {
+      if (item.id == category.id) {
+        fallback = item;
+        break;
+      }
+    }
+    return _CategoryData(
+      id: category.id,
+      title: category.name,
+      subtitle: category.description.isEmpty ? 'Farm fresh collection' : category.description,
+      description: category.description,
+      image: category.imageUrl,
+      fallbackIcon: fallback?.fallbackIcon ?? Icons.eco_rounded,
+      backgroundColor: fallback?.backgroundColor ?? const Color(0xFFE8F5E9),
+      accentColor: fallback?.accentColor ?? AppColors.primary,
+    );
   }
 
   void _go(
@@ -262,7 +275,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             Expanded(
               child: RefreshIndicator(
                 color: AppColors.primary,
-                onRefresh: _loadSavedMode,
+                onRefresh: () async {
+                  await _loadSavedMode();
+                  await _loadCategories();
+                },
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: <Widget>[
@@ -396,7 +412,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 end: Alignment.bottomRight,
                 colors: <Color>[
                   AppColors.primary,
-                  Color(0xFF20A95F),
+                  Color(0xFF2E7D32),
                 ],
               ),
               borderRadius: BorderRadius.circular(14),
@@ -484,7 +500,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F6ED),
+                    color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -596,9 +612,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           end: Alignment.bottomRight,
           colors: home
               ? const <Color>[
-            Color(0xFF043D22),
+            Color(0xFF1B5E20),
             Color(0xFF0D7B40),
-            Color(0xFF20A95F),
+            Color(0xFF2E7D32),
           ]
               : const <Color>[
             Color(0xFF15382C),
@@ -740,7 +756,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             vertical: 6,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFFEAF7EF),
+            color: const Color(0xFFE8F5E9),
             borderRadius: BorderRadius.circular(30),
           ),
           child: const Text(
@@ -761,7 +777,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _categories.length,
+      itemCount: _categoryItems.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: desktop ? 4 : 2,
         crossAxisSpacing: 14,
@@ -772,7 +788,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           BuildContext context,
           int index,
           ) {
-        final _CategoryData category = _categories[index];
+        final _CategoryData category = _categoryItems[index];
 
         return _PremiumCategoryCard(
           category: category,
@@ -806,7 +822,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             children: <Widget>[
               CircleAvatar(
                 radius: 27,
-                backgroundColor: Color(0xFFE8F6ED),
+                backgroundColor: Color(0xFFE8F5E9),
                 child: Icon(
                   Icons.local_shipping_rounded,
                   color: AppColors.primary,
@@ -1018,8 +1034,8 @@ class _ModeOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected
-          ? const Color(0xFFEAF7EF)
-          : const Color(0xFFF8FAF9),
+          ? const Color(0xFFE8F5E9)
+          : const Color(0xFFF9FAF9),
       borderRadius: BorderRadius.circular(19),
       child: InkWell(
         onTap: onTap,
@@ -1105,7 +1121,7 @@ class _TrustStrip extends StatelessWidget {
         vertical: 18,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7EF),
+        color: const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(24),
       ),
       child: const Row(

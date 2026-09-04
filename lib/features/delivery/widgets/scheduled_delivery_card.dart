@@ -20,7 +20,7 @@ class ScheduledDeliveryCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEAF7EF) : Colors.white,
+          color: isSelected ? const Color(0xFFE8F5E9) : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
         ),

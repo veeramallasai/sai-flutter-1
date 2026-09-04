@@ -34,7 +34,7 @@ class PremiumHomeAppBar extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: <Color>[Color(0xFF08733D), Color(0xFF19A75E)]),
+              gradient: const LinearGradient(colors: <Color>[Color(0xFF2E7D32), Color(0xFF2E7D32)]),
               borderRadius: BorderRadius.circular(15),
             ),
             child: const Icon(Icons.eco_rounded, color: Colors.white, size: 27),
@@ -57,7 +57,7 @@ class PremiumHomeAppBar extends StatelessWidget {
           IconButton(onPressed: onNotificationsTap, icon: const Icon(Icons.notifications_none_rounded)),
           IconButton(
             onPressed: onProfileTap,
-            style: IconButton.styleFrom(backgroundColor: const Color(0xFFE9F7EF)),
+            style: IconButton.styleFrom(backgroundColor: const Color(0xFFE8F5E9)),
             icon: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
           ),
         ],

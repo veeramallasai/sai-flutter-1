@@ -40,7 +40,7 @@ class CartItemCard extends StatelessWidget {
             height: 102,
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5FAF7),
+              color: const Color(0xFFF9FAF9),
               borderRadius: BorderRadius.circular(17),
             ),
             child: _CartImage(path: item.imageUrl),
@@ -127,7 +127,7 @@ class CartItemCard extends StatelessWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE7F7ED),
+                                    color: const Color(0xFFE8F5E9),
                                     borderRadius: BorderRadius.circular(7),
                                   ),
                                   child: Text(

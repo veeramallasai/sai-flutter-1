@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../core/utils/product_utils.dart';
 
 class ProductModel {
   ProductModel({
@@ -81,9 +80,7 @@ class ProductModel {
 
     return ProductModel(
       id: _text(documentId.isNotEmpty ? documentId : map['id']),
-      name: ProductUtils.localizedName(
-        _text(map['name'], fallback: 'Fresh Product'),
-      ),
+      name: _text(map['name'], fallback: 'Fresh Product'),
       description: _text(map['description']),
       category: _text(map['category']),
       imageUrl: _text(map['imageUrl'] ?? map['image']),
@@ -155,7 +152,7 @@ class ProductModel {
   }) {
     return ProductModel(
       id: id ?? this.id,
-      name: ProductUtils.localizedName(name ?? this.name),
+      name: name ?? this.name,
       description: description ?? this.description,
       category: category ?? this.category,
       imageUrl: imageUrl ?? this.imageUrl,

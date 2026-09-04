@@ -1,5 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../models/cart_item_model.dart';
 import '../models/cart_model.dart';
 import '../models/product_model.dart';
@@ -8,14 +6,14 @@ import '../remote/cart_remote_source.dart';
 class CartRepository {
   CartRepository({
     CartRemoteSource? remoteSource,
-    FirebaseAuth? auth,
-  })  : _remoteSource = remoteSource ?? CartRemoteSource(),
-        _auth = auth ?? FirebaseAuth.instance;
+  }) : _remoteSource = remoteSource ?? CartRemoteSource();
 
   final CartRemoteSource _remoteSource;
-  final FirebaseAuth _auth;
 
-  String? get currentUserId => _auth.currentUser?.uid;
+  // Cart endpoints are authenticated by the JWT attached by ApiClient.
+  // The backend resolves the current user from that token, so Firebase UID is
+  // neither needed nor safe to access in the local-JWT customer app.
+  String get currentUserId => 'session-user';
 
   Stream<CartModel> watchCart() {
     return _remoteSource.watchCart(_requireUserId());
@@ -68,9 +66,5 @@ class CartRepository {
     return _remoteSource.clearCart(_requireUserId());
   }
 
-  String _requireUserId() {
-    final String userId = currentUserId?.trim() ?? '';
-    if (userId.isEmpty) throw StateError('Please login to continue.');
-    return userId;
-  }
+  String _requireUserId() => currentUserId;
 }

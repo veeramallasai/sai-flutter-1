@@ -36,7 +36,7 @@ class ProductRepository {
         shoppingMode: shoppingMode,
         limit: limit,
       )) {
-        yield remote.isEmpty ? local : remote;
+        yield remote;
       }
     } catch (_) {
       yield local;
@@ -59,7 +59,7 @@ class ProductRepository {
         shoppingMode: shoppingMode,
         limit: limit,
       );
-      return remote.isEmpty ? local : remote;
+      return remote;
     } catch (_) {
       return local;
     }

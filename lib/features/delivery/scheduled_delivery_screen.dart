@@ -100,7 +100,7 @@ class _ScheduledDeliveryScreenState extends State<ScheduledDeliveryScreen> {
           padding: const EdgeInsets.all(16),
           child: FilledButton.icon(
             onPressed: _continue,
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF073D24), minimumSize: const Size.fromHeight(56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B5E20), minimumSize: const Size.fromHeight(56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
             icon: const Icon(Icons.calendar_month_rounded),
             label: Text('RESERVE SLOT • ₹${_fee.toStringAsFixed(0)}'),
           ),

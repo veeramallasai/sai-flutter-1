@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -66,65 +64,12 @@ class _CategoryProductsScreenState
   }
 
   Future<void> _loadSavedShoppingMode() async {
-    try {
-      final User? user =
-          FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      final DocumentSnapshot<Map<String, dynamic>>
-      snapshot =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final String mode =
-      (snapshot.data()?['shoppingMode'] ??
-          _shoppingMode)
-          .toString();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (mode == 'home' || mode == 'shop') {
-        setState(() {
-          _shoppingMode = mode;
-        });
-      }
-    } catch (_) {
-      // Current mode remains active.
-    }
+    // Shopping mode is kept in this screen state. Authentication/session data
+    // comes from the Spring Boot JWT flow, so this screen must not touch Firebase.
   }
 
-  Future<void> _saveShoppingMode(
-      String mode,
-      ) async {
-    try {
-      final User? user =
-          FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(
-        <String, dynamic>{
-          'shoppingMode': mode,
-          'updatedAt':
-          FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    } catch (_) {
-      // UI remains usable if Firestore sync fails.
-    }
+  Future<void> _saveShoppingMode(String mode) async {
+    // The selected mode is already applied in UI state.
   }
 
   Future<void> _refreshProducts() async {
@@ -1060,7 +1005,7 @@ class _CategoryProductsScreenState
                   BoxDecoration(
                     color:
                     const Color(
-                      0xFFE8F6ED,
+                      0xFFE8F5E9,
                     ),
                     borderRadius:
                     BorderRadius
@@ -1787,8 +1732,8 @@ class _ModeOption
   Widget build(BuildContext context) {
     return Material(
       color: selected
-          ? const Color(0xFFEAF7EF)
-          : const Color(0xFFF8FAF9),
+          ? const Color(0xFFE8F5E9)
+          : const Color(0xFFF9FAF9),
       borderRadius:
       BorderRadius.circular(19),
       child: InkWell(
@@ -2018,7 +1963,7 @@ class _EmptyState
               decoration:
               const BoxDecoration(
                 color:
-                Color(0xFFEAF7EF),
+                Color(0xFFE8F5E9),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -2239,7 +2184,7 @@ _CategoryStyle _categoryStyle(
     default:
       return const _CategoryStyle(
         dark: Color(0xFF064324),
-        accent: Color(0xFF159253),
+        accent: Color(0xFF2E7D32),
         image:
         'assets/images/categories/vegetables.png',
         icon: Icons.eco_rounded,

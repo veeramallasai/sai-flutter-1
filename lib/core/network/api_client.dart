@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
+import '../auth/local_auth_session.dart';
 
 import '../config/backend_config.dart';
 import '../errors/error_handler.dart';
@@ -22,8 +22,7 @@ class ApiClient {
        _interceptor =
            interceptor ??
            RequestInterceptor(
-             accessTokenProvider: () async =>
-                 FirebaseAuth.instance.currentUser?.getIdToken(),
+             accessTokenProvider: LocalAuthSession.accessToken,
            ),
        _timeout = timeout ?? BackendConfig.receiveTimeout;
 

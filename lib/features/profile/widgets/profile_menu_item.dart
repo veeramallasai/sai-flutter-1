@@ -23,24 +23,32 @@ class ProfileMenuItem extends StatelessWidget {
   final Color iconColor;
 
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Material(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE5ECE8)),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(color: Color(0x08000000), blurRadius: 16, offset: Offset(0, 7)),
-          ],
-        ),
-        child: ListTile(
+          clipBehavior: Clip.antiAlias,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x08000000),
+                  blurRadius: 16,
+                  offset: Offset(0, 7),
+                ),
+              ],
+            ),
+            child: ListTile(
           onTap: loading ? null : onTap,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           leading: Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: iconColor, size: 22),
@@ -97,6 +105,8 @@ class ProfileMenuItem extends StatelessWidget {
                   color: Color(0xFF9AA6A0),
                   size: 14,
                 ),
+            ),
+          ),
         ),
       );
 }

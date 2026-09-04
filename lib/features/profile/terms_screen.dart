@@ -62,13 +62,13 @@ class _TermsHero extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF073D24), Color(0xFF159253)],
+            colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
           ),
           borderRadius: BorderRadius.circular(26),
         ),
         child: const Row(
           children: <Widget>[
-            Icon(Icons.description_rounded, color: Color(0xFFFFD66B), size: 42),
+            Icon(Icons.description_rounded, color: Color(0xFFFFB300), size: 42),
             SizedBox(width: 14),
             Expanded(
               child: Column(

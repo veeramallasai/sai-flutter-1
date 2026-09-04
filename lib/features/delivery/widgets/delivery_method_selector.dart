@@ -46,7 +46,7 @@ class DeliveryMethodSelector extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
                     decoration: BoxDecoration(
-                      color: selected ? const Color(0xFFE4F6EB) : Colors.white,
+                      color: selected ? const Color(0xFFE8F5E9) : Colors.white,
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(
                         color: selected ? AppColors.primary : AppColors.border,

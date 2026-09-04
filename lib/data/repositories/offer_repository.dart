@@ -41,7 +41,7 @@ class OfferRepository {
           .map(OfferModel.fromMap)
           .where((OfferModel offer) => offer.isAvailable)
           .toList(growable: false);
-      return values.isEmpty ? localOffers : List<OfferModel>.unmodifiable(values);
+      return List<OfferModel>.unmodifiable(values);
     } catch (_) {
       return localOffers;
     }

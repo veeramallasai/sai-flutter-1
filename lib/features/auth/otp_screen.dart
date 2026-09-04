@@ -53,7 +53,7 @@ class _OtpScreenState extends State<OtpScreen>
   bool _sendingEmail = false;
   bool _verifyingOtp = false;
   bool _otpSent = false;
-  bool _emailStage = false;
+  bool _emailStage = true;
 
 
   int _secondsRemaining = 30;
@@ -90,7 +90,7 @@ class _OtpScreenState extends State<OtpScreen>
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _sendOtp();
+      _sendEmailOtp();
     });
   }
 
@@ -316,13 +316,7 @@ class _OtpScreenState extends State<OtpScreen>
     });
 
     try {
-      if (_emailStage) {
-        await _verifyEmailOtp(otp);
-      } else if (kIsWeb) {
-        await _verifyWebOtp(otp);
-      } else {
-        await _verifyNativeOtp(otp);
-      }
+      await _verifyEmailOtp(otp);
     } on FirebaseAuthException catch (error) {
       if (!mounted) return;
 
@@ -611,14 +605,7 @@ class _OtpScreenState extends State<OtpScreen>
 
     _otpController.clear();
 
-    if (_emailStage) {
-      await _sendEmailOtp(
-        resend: true,
-      );
-      return;
-    }
-
-    await _sendOtp(
+    await _sendEmailOtp(
       resend: true,
     );
   }
@@ -816,7 +803,7 @@ class _OtpScreenState extends State<OtpScreen>
         ),
         const SizedBox(width: 14),
         Text(
-          _emailStage ? 'Verify Email' : 'Verify Mobile',
+          _emailStage ? 'Verify Email' : 'Verify Email',
           style: const TextStyle(
             color: AppColors.primaryDark,
             fontSize: 18,
@@ -861,7 +848,7 @@ class _OtpScreenState extends State<OtpScreen>
                   colors:
                   <Color>[
                     Color(
-                      0xFF0B7A3E,
+                      0xFF2E7D32,
                     ),
                     Color(
                       0xFF23A559,
@@ -902,7 +889,7 @@ class _OtpScreenState extends State<OtpScreen>
           ),
 
           const Text(
-            'OTP Verification',
+            'Email OTP Verification',
             textAlign:
             TextAlign.center,
             style: TextStyle(
@@ -938,37 +925,7 @@ class _OtpScreenState extends State<OtpScreen>
             ),
           ),
 
-          if (_hasEmail && !_emailStage) ...<Widget>[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F8F4),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFDCEFE4)),
-              ),
-              child: Row(
-                children: <Widget>[
-                  const Icon(
-                    Icons.mark_email_unread_outlined,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'After mobile verification, a 6-digit email OTP will be sent to $_emailAddress.',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11.5,
-                        height: 1.4,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+
 
           if (_emailStage) ...<Widget>[
             const SizedBox(height: 14),
@@ -988,7 +945,7 @@ class _OtpScreenState extends State<OtpScreen>
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'SMTP email verification is active. Enter the OTP sent to $_emailAddress.',
+                      'A 6-digit verification code was sent to $_emailAddress. No mobile SMS OTP is required.',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11.5,
@@ -1172,7 +1129,7 @@ class _OtpScreenState extends State<OtpScreen>
             ],
           ),
 
-          if (!_emailStage)
+          if (false)
             TextButton.icon(
               onPressed:
               _sendingOtp ||
@@ -1205,7 +1162,7 @@ class _OtpScreenState extends State<OtpScreen>
             BoxDecoration(
               color:
               const Color(
-                0xFFF1F8F4,
+                0xFFE8F5E9,
               ),
               borderRadius:
               BorderRadius
@@ -1281,7 +1238,7 @@ class _OtpBackground
                 colors:
                 <Color>[
                   Color(
-                    0xFFE8F6ED,
+                    0xFFE8F5E9,
                   ),
                   Color(
                     0xFFFFFBF2,

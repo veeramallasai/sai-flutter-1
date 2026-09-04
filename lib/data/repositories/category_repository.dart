@@ -31,7 +31,7 @@ class CategoryRepository {
           .map(_withLocalImage)
           .toList(growable: true)
         ..sort((CategoryModel a, CategoryModel b) => a.sortOrder.compareTo(b.sortOrder));
-      return values.isEmpty ? localCategories : List<CategoryModel>.unmodifiable(values);
+      return List<CategoryModel>.unmodifiable(values);
     } catch (_) {
       return localCategories;
     }

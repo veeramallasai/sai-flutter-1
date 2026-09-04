@@ -34,7 +34,7 @@ class DeliverySlotSelector extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Material(
-            color: selected ? const Color(0xFFEAF7EF) : Colors.white,
+            color: selected ? const Color(0xFFE8F5E9) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             child: ListTile(
               enabled: slot.canBook,

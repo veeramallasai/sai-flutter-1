@@ -160,7 +160,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             width: 43,
             height: 43,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(
@@ -279,8 +279,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            Color(0xFF043D22),
-            Color(0xFF17A45B),
+            Color(0xFF1B5E20),
+            Color(0xFF2E7D32),
           ],
         ),
         borderRadius: BorderRadius.circular(26),
@@ -324,7 +324,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 Text(
                   _statusMessage(order.status),
                   style: const TextStyle(
-                    color: Color(0xFFDDF4E7),
+                    color: Color(0xFFE8F5E9),
                     fontSize: 10.5,
                     height: 1.4,
                     fontWeight: FontWeight.w600,
@@ -486,7 +486,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7EF),
+                  color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 21),

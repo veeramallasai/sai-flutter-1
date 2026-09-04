@@ -26,7 +26,7 @@ class DeliveryTimeSelector extends StatelessWidget {
           selected: selected,
           showCheckmark: false,
           onSelected: (_) => onChanged(time),
-          selectedColor: const Color(0xFFE4F6EB),
+          selectedColor: const Color(0xFFE8F5E9),
           backgroundColor: Colors.white,
           side: BorderSide(color: selected ? AppColors.primary : AppColors.border),
           labelStyle: TextStyle(

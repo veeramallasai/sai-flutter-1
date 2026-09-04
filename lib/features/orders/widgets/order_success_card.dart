@@ -36,7 +36,7 @@ class OrderSuccessCard extends StatelessWidget {
             width: 76,
             height: 76,
             decoration: const BoxDecoration(
-              color: Color(0xFFE7F7ED),
+              color: Color(0xFFE8F5E9),
               shape: BoxShape.circle,
             ),
             child: const Icon(

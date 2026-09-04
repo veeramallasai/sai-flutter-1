@@ -73,6 +73,8 @@ app.*.map.json
 # Local backend startup scripts may contain passwords
 start_backend_smtp.ps1
 start_backend.ps1
+push_to_github.ps1
+
 
 # Local generated/debug files
 otp_screen_full.txt
@@ -88,3 +90,12 @@ Desktop.ini
 
 # Android generated build files
 android/build/
+
+# Archives & Backups
+*.zip
+*.tar.gz
+*.7z
+*.rar
+CUSTOMER_SOURCE_ONLY.zip
+backend_BACKUP_*/
+

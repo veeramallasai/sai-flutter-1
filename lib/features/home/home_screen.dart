@@ -1,14 +1,18 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/auth/local_auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/premium_toast.dart';
-import '../../data/local/local_product_catalog.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/product_model.dart';
+import '../../data/models/banner_model.dart';
+import '../../data/models/category_model.dart';
+import '../../data/models/offer_model.dart';
+import '../../data/repositories/banner_repository.dart';
+import '../../data/repositories/category_repository.dart';
+import '../../data/repositories/offer_repository.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/product_provider.dart';
 import 'widgets/floating_cart_bar.dart';
@@ -31,18 +35,27 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver {
   final PageController _bannerController = PageController();
   late final CartProvider _cartProvider;
   late final ProductProvider _productProvider;
+  late final CategoryRepository _categoryRepository;
+  late final BannerRepository _bannerRepository;
+  late final OfferRepository _offerRepository;
   final Set<String> _addingProducts = <String>{};
 
   Timer? _bannerTimer;
+  Timer? _adminContentRefreshTimer;
 
   String _shoppingMode = 'home';
+  String _displayName = 'Fresh Shopper';
   int _currentBanner = 0;
+  List<_CategoryItem> _categoryItems = List<_CategoryItem>.from(_fallbackCategories);
+  List<BannerModel> _adminBanners = <BannerModel>[];
+  OfferModel? _adminOffer;
 
-  static const List<_CategoryItem> _categories = <_CategoryItem>[
+  static const List<_CategoryItem> _fallbackCategories = <_CategoryItem>[
     _CategoryItem(
       title: 'Vegetables',
       subtitle: 'Farm Fresh',
@@ -73,7 +86,30 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
+  List<_CategoryItem> get _categories => _categoryItems;
+
   List<_HomeBanner> get _banners {
+    if (_adminBanners.isNotEmpty) {
+      const List<List<Color>> colors = <List<Color>>[
+        <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
+        <Color>[Color(0xFF103D37), Color(0xFF178D79)],
+        <Color>[Color(0xFF67470E), Color(0xFFD09118)],
+      ];
+      return _adminBanners.asMap().entries.map((MapEntry<int, BannerModel> entry) {
+        final BannerModel banner = entry.value;
+        final List<Color> pair = colors[entry.key % colors.length];
+        return _HomeBanner(
+          badge: 'FARM TO HOME',
+          title: banner.title,
+          subtitle: banner.subtitle,
+          button: banner.actionLabel.isEmpty ? 'EXPLORE' : banner.actionLabel.toUpperCase(),
+          icon: Icons.eco_rounded,
+          startColor: pair.first,
+          endColor: pair.last,
+          route: _safeBannerRoute(banner.route),
+        );
+      }).toList(growable: false);
+    }
     if (_shoppingMode == 'shop') {
       return const <_HomeBanner>[
         _HomeBanner(
@@ -117,8 +153,8 @@ class _HomeScreenState extends State<HomeScreen> {
         subtitle: 'Handpicked vegetables, fruits and dairy delivered fresh every day.',
         button: 'SHOP FRESH',
         icon: Icons.eco_rounded,
-        startColor: Color(0xFF043D22),
-        endColor: Color(0xFF17A45B),
+        startColor: Color(0xFF1B5E20),
+        endColor: Color(0xFF2E7D32),
         route: '/categories',
       ),
       _HomeBanner(
@@ -151,31 +187,46 @@ class _HomeScreenState extends State<HomeScreen> {
               product.shoppingMode.isEmpty ||
               product.shoppingMode == _shoppingMode,
         )
-        .take(12)
         .toList(growable: false);
-    final List<ProductModel> values = backendProducts.isNotEmpty
-        ? backendProducts
-        : LocalProductCatalog.featured(shoppingMode: _shoppingMode, limit: 12);
-    return values.map(_ProductItem.fromModel).toList(growable: false);
+    return backendProducts.map(_ProductItem.fromModel).toList(growable: false);
   }
 
   @override
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addObserver(this);
     _cartProvider = CartProvider()..listenToCart();
     _productProvider = ProductProvider()
       ..listenToProducts(shoppingMode: _shoppingMode, limit: 200);
+    _categoryRepository = CategoryRepository();
+    _bannerRepository = BannerRepository();
+    _offerRepository = OfferRepository();
     _loadShoppingMode();
+    _loadAdminHomeContent();
+    _adminContentRefreshTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _loadAdminHomeContent(),
+    );
     _startBannerAutoSlide();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadAdminHomeContent();
+      _productProvider.refresh();
+    }
+  }
+
+  @override
   void dispose() {
+    _adminContentRefreshTimer?.cancel();
     _bannerTimer?.cancel();
     _bannerController.dispose();
     _cartProvider.dispose();
     _productProvider.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -197,69 +248,60 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _loadShoppingMode() async {
+  Future<void> _loadAdminHomeContent() async {
     try {
-      final User? user = FirebaseAuth.instance.currentUser;
+      final List<CategoryModel> categories = await _categoryRepository.getCategories();
+      final List<BannerModel> banners = await _bannerRepository.getBanners();
+      final List<OfferModel> offers = await _offerRepository.getOffers();
+      if (!mounted) return;
+      setState(() {
+        _categoryItems = categories.map((CategoryModel category) => _CategoryItem(
+          title: category.name,
+          subtitle: category.description.isEmpty ? 'Farm Fresh' : category.description,
+          value: category.id,
+          image: category.imageUrl,
+          fallbackIcon: Icons.eco_rounded,
+        )).toList(growable: false);
+        _adminBanners = banners;
+        _adminOffer = offers.isEmpty ? null : offers.first;
+        if (_currentBanner >= _banners.length) _currentBanner = 0;
+      });
+    } catch (_) {
+      // Repositories already provide offline fallback data when backend is unavailable.
+    }
+  }
 
-      if (user == null) {
-        return;
-      }
+  String _safeBannerRoute(String value) {
+    final String route = value.trim();
+    if (route.isEmpty) return '/categories';
+    if (route.startsWith('/category-products?')) return '/categories';
+    return route;
+  }
 
-      final DocumentSnapshot<Map<String, dynamic>> document =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-
-      final String mode = (document.data()?['shoppingMode'] ?? 'home')
-          .toString();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (mode == 'home' || mode == 'shop') {
+  Future<void> _loadShoppingMode() async {
+    // Customer authentication now comes from the Spring Boot JWT session.
+    // Keep Home as the safe default mode and load the signed-in display name
+    // from local secure session storage instead of touching Firebase.
+    try {
+      final String name = (await LocalAuthSession.displayName())?.trim() ?? '';
+      if (!mounted) return;
+      if (name.isNotEmpty) {
         setState(() {
-          _shoppingMode = mode;
+          _displayName = name.split(RegExp(r'\s+')).first;
         });
-        _productProvider.setShoppingMode(mode);
       }
     } catch (_) {
-      // Default Home mode remains active.
+      // The premium Home UI remains available even if local profile read fails.
     }
   }
 
   Future<void> _saveShoppingMode(String mode) async {
-    try {
-      final User? user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        <String, dynamic>{
-          'shoppingMode': mode,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    } catch (_) {
-      // UI continues even when network sync fails.
-    }
+    // Shopping mode is applied immediately in the UI. Backend persistence can
+    // be added to the shared profile API without reintroducing Firebase.
+    return;
   }
 
-  String get _userName {
-    final User? user = FirebaseAuth.instance.currentUser;
-
-    final String name = user?.displayName?.trim() ?? '';
-
-    if (name.isEmpty) {
-      return 'Fresh Shopper';
-    }
-
-    return name.split(RegExp(r'\s+')).first;
-  }
+  String get _userName => _displayName;
 
   void _go(String route, {Object? arguments}) {
     Navigator.of(context).pushNamed(route, arguments: arguments);
@@ -436,6 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _bannerController.jumpToPage(0);
     }
 
+    _productProvider.setShoppingMode(selected);
     await _saveShoppingMode(selected);
   }
 
@@ -456,6 +499,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: AppColors.primary,
                 onRefresh: () async {
                   await _loadShoppingMode();
+                  await _productProvider.refresh();
+                  await _loadAdminHomeContent();
                 },
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -495,8 +540,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             header: _buildSectionHeader(
                               title: 'Shop by category',
                               subtitle: 'Fresh essentials, directly from trusted farms',
-                              action: 'View all',
-                              onTap: () => _go('/categories'),
                             ),
                           ),
                           const SizedBox(height: 30),
@@ -521,8 +564,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               subtitle: _shoppingMode == 'home'
                                   ? 'Fresh products for your everyday needs'
                                   : 'Popular bulk products for your business',
-                              action: 'View all',
-                              onTap: () => _go('/categories'),
                             ),
                           ),
                           const SizedBox(height: 30),
@@ -604,7 +645,7 @@ class _HomeScreenState extends State<HomeScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: <Color>[Color(0xFF08733D), Color(0xFF19A75E)],
+                colors: <Color>[Color(0xFF2E7D32), Color(0xFF2E7D32)],
               ),
               borderRadius: BorderRadius.circular(15),
             ),
@@ -689,7 +730,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(width: 3),
           Material(
-            color: const Color(0xFFE9F7EF),
+            color: const Color(0xFFE8F5E9),
             borderRadius: BorderRadius.circular(15),
             child: InkWell(
               borderRadius: BorderRadius.circular(15),
@@ -742,7 +783,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F6ED),
+                    color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -964,7 +1005,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  home ? 'Fresh deals every day' : 'Exclusive wholesale deals',
+                  _adminOffer?.title ?? (home ? 'Fresh deals every day' : 'Exclusive wholesale deals'),
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 14.5,
@@ -973,9 +1014,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  home
-                      ? 'Save more on selected farm-fresh products.'
-                      : 'Unlock better margins with selected bulk packs.',
+                  _adminOffer?.description.isNotEmpty == true
+                      ? '${_adminOffer!.description}${_adminOffer!.code.isEmpty ? '' : ' • Use ${_adminOffer!.code}'}'
+                      : (home
+                          ? 'Save more on selected farm-fresh products.'
+                          : 'Unlock better margins with selected bulk packs.'),
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 11,
@@ -1000,31 +1043,34 @@ class _HomeScreenState extends State<HomeScreen> {
       listenable: _productProvider,
       builder: (BuildContext context, Widget? child) => ListenableBuilder(
         listenable: _cartProvider,
-        builder: (BuildContext context, Widget? child) => SizedBox(
-          height: desktop ? 355 : 326,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _products.length,
-            separatorBuilder: (BuildContext context, int index) =>
-                const SizedBox(width: 14),
+        builder: (BuildContext context, Widget? child) {
+          final List<_ProductItem> products = _products;
+
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: products.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              crossAxisSpacing: desktop ? 14 : 8,
+              mainAxisSpacing: desktop ? 14 : 10,
+              childAspectRatio: desktop ? 0.70 : 0.42,
+            ),
             itemBuilder: (BuildContext context, int index) {
-              final _ProductItem product = _products[index];
+              final _ProductItem product = products[index];
               final int quantity = _quantityFor(product);
-              return SizedBox(
-                width: desktop ? 228 : 190,
-                child: _ProductCard(
-                  product: product,
-                  quantity: quantity,
-                  onTap: () => _openProduct(product),
-                  onAdd: () => _addToCart(product),
-                  onDecrease: () => _changeQuantity(product, -1),
-                  onIncrease: () => _changeQuantity(product, 1),
-                  adding: _addingProducts.contains(product.id),
-                ),
+              return _ProductCard(
+                product: product,
+                quantity: quantity,
+                onTap: () => _openProduct(product),
+                onAdd: () => _addToCart(product),
+                onDecrease: () => _changeQuantity(product, -1),
+                onIncrease: () => _changeQuantity(product, 1),
+                adding: _addingProducts.contains(product.id),
               );
             },
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -1033,7 +1079,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7EF),
+        color: const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(24),
       ),
       child: const Row(
@@ -1079,7 +1125,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: <Widget>[
               CircleAvatar(
                 radius: 26,
-                backgroundColor: Color(0xFFE8F6ED),
+                backgroundColor: Color(0xFFE8F5E9),
                 child: Icon(
                   Icons.local_shipping_rounded,
                   color: AppColors.primary,
@@ -1125,41 +1171,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSectionHeader({
     required String title,
     required String subtitle,
-    required String action,
-    required VoidCallback onTap,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        TextButton(
-          onPressed: onTap,
-          child: Text(
-            action,
-            style: const TextStyle(fontWeight: FontWeight.w900),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -1335,23 +1365,10 @@ class _RoundCategoryCard extends StatelessWidget {
                 ),
                 child: ClipOval(
                   child: Container(
-                    color: const Color(0xFFF1F8F4),
-                    child: Image.asset(
-                      category.image,
+                    color: const Color(0xFFE8F5E9),
+                    child: PremiumProductImage(
+                      path: category.image,
                       fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      errorBuilder:
-                          (
-                            BuildContext context,
-                            Object error,
-                            StackTrace? stackTrace,
-                          ) {
-                            return Icon(
-                              category.fallbackIcon,
-                              color: AppColors.primary,
-                              size: 39,
-                            );
-                          },
                     ),
                   ),
                 ),
@@ -1437,7 +1454,7 @@ class _ProductCard extends StatelessWidget {
                     Positioned.fill(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F8F4),
+                          color: const Color(0xFFE8F5E9),
                           borderRadius: BorderRadius.circular(17),
                         ),
                         child: PremiumProductImage(path: product.image),
@@ -1627,7 +1644,7 @@ class _ServiceCard extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: AppColors.primary, size: 19),
@@ -1722,7 +1739,7 @@ class _ModeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFFEAF7EF) : const Color(0xFFF8FAF9),
+      color: selected ? const Color(0xFFE8F5E9) : const Color(0xFFF9FAF9),
       borderRadius: BorderRadius.circular(19),
       child: InkWell(
         borderRadius: BorderRadius.circular(19),

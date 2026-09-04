@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
@@ -61,8 +60,6 @@ class _CheckoutScreenState
   bool _applyingCoupon = false;
   bool _continuing = false;
 
-  User? get _user =>
-      FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
@@ -292,23 +289,6 @@ class _CheckoutScreenState
 
   @override
   Widget build(BuildContext context) {
-    final User? user = _user;
-
-    if (user == null) {
-      return _LoginRequired(
-        onLogin: () {
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil(
-            AppRoutes.login,
-                (
-                Route<dynamic> route,
-                ) =>
-            false,
-          );
-        },
-      );
-    }
-
     return Scaffold(
       backgroundColor:
       AppColors.background,
@@ -405,7 +385,7 @@ class _CheckoutScreenState
             height: 43,
             decoration: BoxDecoration(
               color:
-              const Color(0xFFEAF7EF),
+              const Color(0xFFE8F5E9),
               borderRadius:
               BorderRadius.circular(13),
             ),
@@ -653,8 +633,8 @@ class _CheckoutScreenState
             Color(0xFF35865F),
           ]
               : const <Color>[
-            Color(0xFF043D22),
-            Color(0xFF17A45B),
+            Color(0xFF1B5E20),
+            Color(0xFF2E7D32),
           ],
         ),
         borderRadius:
@@ -896,7 +876,7 @@ class _CheckoutScreenState
             height: 42,
             decoration: BoxDecoration(
               color:
-              const Color(0xFFEAF7EF),
+              const Color(0xFFE8F5E9),
               borderRadius:
               BorderRadius.circular(12),
             ),
@@ -1458,7 +1438,7 @@ class _ReviewCard extends StatelessWidget {
                 BoxDecoration(
                   color:
                   const Color(
-                    0xFFEAF7EF,
+                    0xFFE8F5E9,
                   ),
                   borderRadius:
                   BorderRadius
@@ -1632,7 +1612,7 @@ class _PriceSummaryCard
             BoxDecoration(
               color:
               const Color(
-                0xFFEAF7EF,
+                0xFFE8F5E9,
               ),
               borderRadius:
               BorderRadius
@@ -1704,7 +1684,7 @@ class _SafeCheckoutCard
       const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-        const Color(0xFFEAF7EF),
+        const Color(0xFFE8F5E9),
         borderRadius:
         BorderRadius.circular(20),
       ),

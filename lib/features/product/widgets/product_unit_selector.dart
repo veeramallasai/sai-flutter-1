@@ -47,7 +47,7 @@ class ProductUnitSelector extends StatelessWidget {
               onSelected: (_) => onChanged(unit),
               showCheckmark: false,
               backgroundColor: Colors.white,
-              selectedColor: const Color(0xFFE4F6EB),
+              selectedColor: const Color(0xFFE8F5E9),
               side: BorderSide(
                 color: selected ? AppColors.primary : AppColors.border,
                 width: selected ? 1.4 : 1,

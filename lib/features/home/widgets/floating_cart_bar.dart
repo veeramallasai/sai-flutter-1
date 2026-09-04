@@ -26,7 +26,7 @@ class PremiumFloatingCartButton extends StatelessWidget {
             height: 58,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: <Color>[Color(0xFF04361F), Color(0xFF0B7A3E)]),
+              gradient: const LinearGradient(colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)]),
               borderRadius: BorderRadius.circular(19),
               boxShadow: const <BoxShadow>[
                 BoxShadow(color: Color(0x36043D24), blurRadius: 22, offset: Offset(0, 10)),
@@ -77,7 +77,7 @@ class CartBadgeIcon extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4B400),
+                  color: const Color(0xFFFFB300),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),

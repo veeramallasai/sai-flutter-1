@@ -42,7 +42,7 @@ class NutritionSection extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5FAF7),
+                color: const Color(0xFFF9FAF9),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFDCECE2)),
               ),

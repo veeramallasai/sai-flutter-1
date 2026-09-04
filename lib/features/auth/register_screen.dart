@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_routes.dart';
+import '../../core/auth/local_auth_session.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/repositories/user_repository.dart';
 import 'widgets/password_strength.dart';
@@ -91,14 +93,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   String? _validatePhone(String? value) {
-    final String phone =
-    _normalizePhone(value ?? '');
-
-    if (!RegExp(r'^[6-9]\d{9}$')
-        .hasMatch(phone)) {
-      return 'Enter a valid 10-digit mobile number';
+    final String raw = value?.trim() ?? '';
+    if (raw.isEmpty) return null;
+    final String phone = _normalizePhone(raw);
+    if (!RegExp(r'^[6-9]\\d{9}$').hasMatch(phone)) {
+      return 'Enter a valid 10-digit mobile number or leave it blank';
     }
-
     return null;
   }
 
@@ -222,138 +222,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     FocusScope.of(context).unfocus();
-
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_termsAccepted) {
-      _showMessage(
-        'Please accept Terms of Service and Privacy Policy.',
-      );
+      _showMessage('Please accept Terms of Service and Privacy Policy.');
       return;
     }
 
-    setState(() {
-      _loading = true;
-    });
-
+    setState(() => _loading = true);
     try {
-      final String firstName =
-      _firstNameController.text.trim();
+      final String firstName = _firstNameController.text.trim();
+      final String lastName = _lastNameController.text.trim();
+      final String email = _emailController.text.trim().toLowerCase();
+      final String digits = _normalizePhone(_phoneController.text);
+      final String phone = digits.isEmpty ? '' : '+91$digits';
 
-      final String lastName =
-      _lastNameController.text.trim();
-
-      final String email =
-      _emailController.text
-          .trim()
-          .toLowerCase();
-
-      final String phone =
-          '+91${_normalizePhone(_phoneController.text)}';
-
-      final String password = _passwordController.text;
-
-      final User user = await _createOrResumeFirebaseUser(
-        email: email,
-        password: password,
-      );
-
-      final String displayName =
-      '$firstName $lastName'.trim();
-
-      await user.updateDisplayName(displayName);
-      await user.reload();
-
-      final User refreshedUser =
-          FirebaseAuth.instance.currentUser ?? user;
-
-      final DocumentReference<Map<String, dynamic>> userRef =
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(refreshedUser.uid);
-
-      final DocumentSnapshot<Map<String, dynamic>> existing =
-      await userRef.get();
-
-      final Map<String, dynamic> profile =
-      <String, dynamic>{
-        'uid': refreshedUser.uid,
-        'firstName': firstName,
-        'lastName': lastName,
-        'displayName': displayName,
-        'email': email,
-        'emailVerified': false,
-        'phoneNumber': phone,
-        'photoUrl': refreshedUser.photoURL ?? '',
-        'phoneVerified': false,
-        'shoppingMode':
-        existing.data()?['shoppingMode'] ?? 'home',
-        'accountType':
-        existing.data()?['accountType'] ?? 'customer',
-        'isActive': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-        'lastLoginAt': FieldValue.serverTimestamp(),
-      };
-
-      if (!existing.exists) {
-        profile['createdAt'] =
-            FieldValue.serverTimestamp();
-      }
-
-      await userRef.set(
-        profile,
-        SetOptions(merge: true),
-      );
-
-      await _syncBackendProfileWithRetry();
-
-      if (!mounted) return;
-
-      Navigator.of(context)
-          .pushReplacementNamed(
-        AppRoutes.otp,
-        arguments: <String, dynamic>{
-          'phoneNumber': phone,
+      final response = await ApiClient().post(
+        '/api/v1/auth/register',
+        body: <String, dynamic>{
+          'firstName': firstName,
+          'lastName': lastName.isEmpty ? '-' : lastName,
           'email': email,
-          'emailVerificationSent': false,
-          'userId': refreshedUser.uid,
-          'source': 'register',
+          'phoneNumber': phone,
+          'password': _passwordController.text,
+          'role': 'CUSTOMER',
         },
       );
-    } on FirebaseAuthException catch (error) {
+      final dynamic raw = response.data;
+      if (raw is! Map) throw StateError('Invalid registration response.');
+      final Map<String, dynamic> data = raw.map(
+        (dynamic key, dynamic value) => MapEntry<String, dynamic>(key.toString(), value),
+      );
+      await LocalAuthSession.saveFromAuthResponse(data);
       if (!mounted) return;
-
-      _showMessage(
-        _firebaseErrorMessage(error),
-      );
-    } on FirebaseException catch (error) {
-      if (!mounted) return;
-
-      _showMessage(
-        error.message ??
-            'Unable to save account information.',
-      );
-    } catch (error, stackTrace) {
-      debugPrint('REGISTER SETUP ERROR: $error');
-      debugPrintStack(
-        label: 'REGISTER SETUP STACK',
-        stackTrace: stackTrace,
-      );
-
-      if (!mounted) return;
-
-      _showMessage(
-        'Account was created, but setup could not finish. '
-            'Please press Create Account again with the same email and password.',
-      );
+      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
+    } catch (error) {
+      if (mounted) _showMessage('Unable to create account. The email may already be registered.');
     } finally {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -610,7 +515,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: const Color(0xFFEAF7EF), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(14)),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
@@ -980,7 +885,7 @@ class _RegisterHero
           end:
           Alignment.bottomRight,
           colors: <Color>[
-            Color(0xFF052E1B),
+            Color(0xFF1B5E20),
             Color(0xFF0B6F3B),
             Color(0xFF25A75D),
           ],
@@ -1087,7 +992,7 @@ class _HeroPill extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
     decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
     child: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
-      Icon(icon, color: const Color(0xFFFFD66B), size: 13),
+      Icon(icon, color: const Color(0xFFFFB300), size: 13),
       const SizedBox(width: 5),
       Text(label, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800)),
     ]),

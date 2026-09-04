@@ -11,10 +11,17 @@ class ProductRemoteSource {
     String category = '',
     String shoppingMode = '',
     int limit = 200,
-  }) {
-    return Stream<List<ProductModel>>.fromFuture(
-      getProducts(category: category, shoppingMode: shoppingMode, limit: limit),
-    );
+  }) async* {
+    // The backend is the catalog source of truth. Poll while the screen is open
+    // so Admin product changes appear without restarting the Customer app.
+    while (true) {
+      yield await getProducts(
+        category: category,
+        shoppingMode: shoppingMode,
+        limit: limit,
+      );
+      await Future<void>.delayed(const Duration(seconds: 5));
+    }
   }
 
   Future<List<ProductModel>> getProducts({
@@ -46,7 +53,7 @@ class ProductRemoteSource {
   }
 
   Stream<ProductModel?> watchProduct(String productId) =>
-      Stream<ProductModel?>.fromFuture(getProduct(productId));
+      Stream<ProductModel?>.fromFuture(getProduct(productId)).asBroadcastStream();
 
   Future<ProductModel?> getProduct(
     String productId, {

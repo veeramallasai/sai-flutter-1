@@ -28,7 +28,7 @@ class FarmerDetailsSection extends StatelessWidget {
         children: <Widget>[
           CircleAvatar(
             radius: 31,
-            backgroundColor: const Color(0xFFEAF7EF),
+            backgroundColor: const Color(0xFFE8F5E9),
             backgroundImage: farmer.imageUrl.startsWith('http')
                 ? NetworkImage(farmer.imageUrl)
                 : null,

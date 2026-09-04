@@ -33,7 +33,7 @@ class ProductBenefits extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF7EF),
+                color: const Color(0xFFE8F5E9),
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Row(

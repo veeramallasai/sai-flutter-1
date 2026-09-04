@@ -57,7 +57,7 @@ class ProceedCheckoutBar extends StatelessWidget {
               FilledButton.icon(
                 onPressed: enabled && !isLoading ? onProceed : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF073D24),
+                  backgroundColor: const Color(0xFF1B5E20),
                   minimumSize: const Size(190, 54),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(17),

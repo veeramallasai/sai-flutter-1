@@ -1,0 +1,751 @@
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\auth\EmailOtpController.java ================
+
+package com.farmtohome.api.auth;
+
+import com.farmtohome.api.common.ApiResponse;
+import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.Map;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/auth/email-otp")
+public class EmailOtpController {
+  private final EmailOtpService service;
+
+  public EmailOtpController(EmailOtpService service) {
+    this.service = service;
+  }
+
+  @PostMapping("/send")
+  ApiResponse<Map<String, Object>> send(Principal principal) {
+    return ApiResponse.ok(service.send(principal.getName()), "Email OTP sent.");
+  }
+
+  @PostMapping("/verify")
+  ApiResponse<Map<String, Object>> verify(
+      Principal principal,
+      @Valid @RequestBody EmailOtpDtos.VerifyRequest request) {
+    return ApiResponse.ok(
+        service.verify(principal.getName(), request.otp()),
+        "Email verified successfully.");
+  }
+
+  @GetMapping("/status")
+  ApiResponse<Map<String, Object>> status(Principal principal) {
+    return ApiResponse.ok(service.status(principal.getName()));
+  }
+}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\auth\EmailOtpDtos.java ================
+
+package com.farmtohome.api.auth;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+
+public final class EmailOtpDtos {
+  private EmailOtpDtos() {}
+
+  public record VerifyRequest(
+      @NotBlank
+      @Pattern(regexp = "\\d{6}", message = "OTP must be exactly 6 digits.")
+      String otp) {}
+}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\auth\EmailOtpService.java ================
+
+package com.farmtohome.api.auth;
+
+import com.farmtohome.api.common.ApiException;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.UserRecord;
+import java.security.SecureRandom;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class EmailOtpService {
+  private static final String PURPOSE = "email_verification";
+  private static final int OTP_TTL_MINUTES = 10;
+  private static final int MAX_VERIFY_ATTEMPTS = 5;
+  private static final int MAX_SENDS_PER_HOUR = 5;
+
+  private final JdbcTemplate jdbc;
+  private final JavaMailSender mailSender;
+  private final FirebaseAuth firebaseAuth;
+  private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+  private final SecureRandom random = new SecureRandom();
+  private final String mailFrom;
+
+  public EmailOtpService(
+      JdbcTemplate jdbc,
+      JavaMailSender mailSender,
+      FirebaseApp firebaseApp,
+      @Value("${app.mail-from}") String mailFrom) {
+    this.jdbc = jdbc;
+    this.mailSender = mailSender;
+    this.firebaseAuth = FirebaseAuth.getInstance(firebaseApp);
+    this.mailFrom = mailFrom;
+  }
+
+  @Transactional
+  public Map<String, Object> send(String uid) {
+    UserEmail user = requireUser(uid);
+
+    if (user.emailVerified()) {
+      return Map.of(
+          "email", mask(user.email()),
+          "alreadyVerified", true,
+          "expiresInSeconds", 0);
+    }
+
+    Integer recent = jdbc.queryForObject("""
+        SELECT count(*)
+        FROM email_verification_otps
+        WHERE firebase_uid = ?
+          AND purpose = ?
+          AND created_at >= now() - interval '1 hour'
+        """, Integer.class, uid, PURPOSE);
+
+    if (recent != null && recent >= MAX_SENDS_PER_HOUR) {
+      throw new ApiException(
+          HttpStatus.TOO_MANY_REQUESTS,
+          "Too many OTP requests. Please try again later.");
+    }
+
+    String otp = String.format("%06d", random.nextInt(1_000_000));
+    String hash = encoder.encode(otp);
+    Instant now = Instant.now();
+    Instant expires = now.plus(OTP_TTL_MINUTES, ChronoUnit.MINUTES);
+
+    Integer resendCount = jdbc.queryForObject("""
+        SELECT COALESCE(max(resend_count), 0)
+        FROM email_verification_otps
+        WHERE firebase_uid = ? AND email = ? AND purpose = ?
+        """, Integer.class, uid, user.email(), PURPOSE);
+
+    jdbc.update("""
+        DELETE FROM email_verification_otps
+        WHERE firebase_uid = ?
+          AND email = ?
+          AND purpose = ?
+          AND verified_at IS NULL
+        """, uid, user.email(), PURPOSE);
+
+    jdbc.update("""
+        INSERT INTO email_verification_otps(
+          firebase_uid, email, otp_hash, purpose, expires_at,
+          attempts, resend_count, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+        """,
+        uid,
+        user.email(),
+        hash,
+        PURPOSE,
+        Timestamp.from(expires),
+        (resendCount == null ? 0 : resendCount) + 1,
+        Timestamp.from(now),
+        Timestamp.from(now));
+
+    sendMail(user.email(), otp);
+
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("email", mask(user.email()));
+    result.put("alreadyVerified", false);
+    result.put("expiresInSeconds", OTP_TTL_MINUTES * 60);
+    return result;
+  }
+
+  @Transactional
+  public Map<String, Object> verify(String uid, String rawOtp) {
+    String otp = rawOtp == null ? "" : rawOtp.trim();
+    if (!otp.matches("\\d{6}")) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Enter a valid 6-digit OTP.");
+    }
+
+    UserEmail user = requireUser(uid);
+
+    if (user.emailVerified()) {
+      return Map.of(
+          "email", mask(user.email()),
+          "verified", true,
+          "alreadyVerified", true);
+    }
+
+    List<OtpRow> rows = jdbc.query("""
+        SELECT id, otp_hash, expires_at, attempts
+        FROM email_verification_otps
+        WHERE firebase_uid = ?
+          AND email = ?
+          AND purpose = ?
+          AND verified_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (rs, row) -> new OtpRow(
+            rs.getLong("id"),
+            rs.getString("otp_hash"),
+            rs.getTimestamp("expires_at").toInstant(),
+            rs.getInt("attempts")),
+        uid, user.email(), PURPOSE);
+
+    if (rows.isEmpty()) {
+      throw new ApiException(
+          HttpStatus.BAD_REQUEST,
+          "No active email OTP found. Request a new OTP.");
+    }
+
+    OtpRow row = rows.get(0);
+
+    if (row.expiresAt().isBefore(Instant.now())) {
+      throw new ApiException(
+          HttpStatus.BAD_REQUEST,
+          "Email OTP expired. Request a new OTP.");
+    }
+
+    if (row.attempts() >= MAX_VERIFY_ATTEMPTS) {
+      throw new ApiException(
+          HttpStatus.TOO_MANY_REQUESTS,
+          "Too many incorrect attempts. Request a new OTP.");
+    }
+
+    if (!encoder.matches(otp, row.otpHash())) {
+      jdbc.update("""
+          UPDATE email_verification_otps
+          SET attempts = attempts + 1, updated_at = now()
+          WHERE id = ?
+          """, row.id());
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Incorrect email OTP.");
+    }
+
+    jdbc.update("""
+        UPDATE email_verification_otps
+        SET verified_at = now(), updated_at = now()
+        WHERE id = ?
+        """, row.id());
+
+    jdbc.update("""
+        UPDATE app_users
+        SET email_verified = true, updated_at = now()
+        WHERE firebase_uid = ?
+        """, uid);
+
+    try {
+      firebaseAuth.updateUser(
+          new UserRecord.UpdateRequest(uid).setEmailVerified(true));
+    } catch (FirebaseAuthException error) {
+      throw new ApiException(
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          "Email verified in database, but Firebase verification sync failed.");
+    }
+
+    return Map.of(
+        "email", mask(user.email()),
+        "verified", true,
+        "alreadyVerified", false);
+  }
+
+  @Transactional(readOnly = true)
+  public Map<String, Object> status(String uid) {
+    UserEmail user = requireUser(uid);
+    return Map.of(
+        "email", mask(user.email()),
+        "verified", user.emailVerified());
+  }
+
+  private UserEmail requireUser(String uid) {
+    List<UserEmail> users = jdbc.query("""
+        SELECT email, email_verified
+        FROM app_users
+        WHERE firebase_uid = ? AND active = true
+        """,
+        (rs, row) -> new UserEmail(
+            rs.getString("email"),
+            rs.getBoolean("email_verified")),
+        uid);
+
+    if (users.isEmpty()) {
+      throw new ApiException(HttpStatus.NOT_FOUND, "User profile not found.");
+    }
+
+    UserEmail user = users.get(0);
+    if (user.email() == null || user.email().isBlank()) {
+      throw new ApiException(
+          HttpStatus.BAD_REQUEST,
+          "No email address is available for this account.");
+    }
+    return user;
+  }
+
+  private void sendMail(String to, String otp) {
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(mailFrom);
+    message.setTo(to);
+    message.setSubject("Farm To Home - Email Verification OTP");
+    message.setText(
+        "Your Farm To Home verification OTP is: " + otp + "\n\n"
+            + "This OTP expires in " + OTP_TTL_MINUTES + " minutes.\n"
+            + "Do not share this OTP with anyone.");
+    try {
+      mailSender.send(message);
+    } catch (RuntimeException error) {
+      throw new ApiException(
+          HttpStatus.SERVICE_UNAVAILABLE,
+          "Unable to send verification email right now.");
+    }
+  }
+
+  private String mask(String email) {
+    int at = email.indexOf('@');
+    if (at <= 1) return email;
+    String local = email.substring(0, at);
+    return local.substring(0, 1)
+        + "***"
+        + local.substring(local.length() - 1)
+        + email.substring(at);
+  }
+
+  private record UserEmail(String email, boolean emailVerified) {}
+  private record OtpRow(long id, String otpHash, Instant expiresAt, int attempts) {}
+}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\auth\FirebaseTokenFilter.java ================
+
+package com.farmtohome.api.auth;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+@Component
+public class FirebaseTokenFilter extends OncePerRequestFilter {
+
+  @Override
+  protected void doFilterInternal(
+      HttpServletRequest request,
+      HttpServletResponse response,
+      FilterChain filterChain
+  ) throws ServletException, IOException {
+    filterChain.doFilter(request, response);
+  }
+}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\config\SecurityConfig.java ================
+
+package com.farmtohome.api.config;
+
+import com.farmtohome.api.auth.FirebaseTokenFilter;
+import java.util.Arrays;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+@Configuration
+@EnableMethodSecurity
+public class SecurityConfig {
+  @Bean
+  SecurityFilterChain securityFilterChain(
+      HttpSecurity http,
+      FirebaseTokenFilter firebaseTokenFilter) throws Exception {
+    return http
+        .csrf(csrf -> csrf.disable())
+        .cors(cors -> {})
+        .sessionManagement(session ->
+            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/api/**").authenticated()
+            .anyRequest().denyAll())
+        .exceptionHandling(exceptions -> exceptions
+            .authenticationEntryPoint((request, response, error) -> {
+              response.setStatus(401);
+              response.setContentType("application/json");
+              response.getWriter().write(
+                  "{\"success\":false,\"message\":\"Authentication required.\","
+                      + "\"code\":\"UNAUTHORIZED\"}");
+            })
+            .accessDeniedHandler((request, response, error) -> {
+              response.setStatus(403);
+              response.setContentType("application/json");
+              response.getWriter().write(
+                  "{\"success\":false,\"message\":\"Access denied.\","
+                      + "\"code\":\"FORBIDDEN\"}");
+            }))
+        .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class)
+        .build();
+  }
+
+  @Bean
+  UserDetailsService userDetailsService() {
+    // Authentication is handled by the shared backend authentication flow.
+    // Declaring this bean also disables Spring's generated development password.
+    return username -> {
+      throw new UsernameNotFoundException("Spring UserDetailsService is not used directly by this API.");
+    };
+  }
+
+  @Bean
+  CorsConfigurationSource corsConfigurationSource(
+      @Value("${app.cors-origins}") String origins) {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOriginPatterns(Arrays.stream(origins.split(","))
+        .map(String::trim)
+        .filter(value -> !value.isBlank())
+        .toList());
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+    configuration.setExposedHeaders(List.of("Location"));
+    configuration.setAllowCredentials(true);
+    configuration.setMaxAge(3600L);
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+  }
+}
+
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\user\AppUserController.java ================
+
+package com.farmtohome.api.user;
+
+import com.farmtohome.api.common.ApiException;
+import com.farmtohome.api.common.ApiResponse;
+import com.google.firebase.auth.FirebaseToken;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/users")
+public class AppUserController {
+  private final AppUserService users;
+
+  public AppUserController(AppUserService users) {
+    this.users = users;
+  }
+
+  @PutMapping("/me")
+  ApiResponse<AppUserDtos.Profile> sync(
+      Authentication authentication,
+      @Valid @RequestBody AppUserDtos.SyncRequest request) {
+    return ApiResponse.ok(users.sync(token(authentication), request), "Profile synchronized.");
+  }
+
+  @GetMapping("/me")
+  ApiResponse<AppUserDtos.Profile> me(Authentication authentication) {
+    return ApiResponse.ok(users.get(authentication.getName()));
+  }
+
+  private FirebaseToken token(Authentication authentication) {
+    Object value = authentication == null ? null : authentication.getCredentials();
+    if (value instanceof FirebaseToken firebaseToken) return firebaseToken;
+    throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid login session.");
+  }
+}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\user\AppUserDtos.java ================
+
+package com.farmtohome.api.user;
+
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import java.time.Instant;
+
+public final class AppUserDtos {
+  private AppUserDtos() {}
+
+  public record SyncRequest(
+      @Size(max = 100) String firstName,
+      @Size(max = 100) String lastName,
+      @Size(max = 32) String phoneNumber,
+      @Size(max = 1000) String photoUrl,
+      @Pattern(regexp = "home|shop") String shoppingMode,
+      @Pattern(regexp = "customer|shop_owner") String accountType) {}
+
+  public record Profile(
+      String firebaseUid,
+      String firstName,
+      String lastName,
+      String displayName,
+      String email,
+      String phoneNumber,
+      String photoUrl,
+      String shoppingMode,
+      String accountType,
+      String authProvider,
+      boolean emailVerified,
+      boolean phoneVerified,
+      boolean active,
+      Instant lastLoginAt,
+      Instant createdAt,
+      Instant updatedAt) {
+    static Profile from(AppUserEntity value) {
+      return new Profile(
+          value.getFirebaseUid(), value.getFirstName(), value.getLastName(),
+          value.getDisplayName(), value.getEmail(), value.getPhoneNumber(),
+          value.getPhotoUrl(), value.getShoppingMode(), value.getAccountType(),
+          value.getAuthProvider(), value.isEmailVerified(), value.isPhoneVerified(),
+          value.isActive(), value.getLastLoginAt(), value.getCreatedAt(),
+          value.getUpdatedAt());
+    }
+  }
+}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\user\AppUserEntity.java ================
+
+package com.farmtohome.api.user;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.Instant;
+
+@Entity
+@Table(name = "app_users")
+public class AppUserEntity {
+  @Id
+  @Column(name = "firebase_uid", nullable = false, length = 160)
+  private String firebaseUid;
+
+  @Column(name = "first_name", nullable = false, length = 100)
+  private String firstName;
+
+  @Column(name = "last_name", nullable = false, length = 100)
+  private String lastName;
+
+  @Column(name = "display_name", nullable = false, length = 220)
+  private String displayName;
+
+  @Column(nullable = false, length = 320)
+  private String email;
+
+  @Column(name = "phone_number", nullable = false, length = 32)
+  private String phoneNumber;
+
+  @Column(name = "photo_url", nullable = false, length = 1000)
+  private String photoUrl;
+
+  @Column(name = "shopping_mode", nullable = false, length = 20)
+  private String shoppingMode;
+
+  @Column(name = "account_type", nullable = false, length = 40)
+  private String accountType;
+
+  @Column(name = "auth_provider", nullable = false, length = 80)
+  private String authProvider;
+
+  @Column(name = "email_verified", nullable = false)
+  private boolean emailVerified;
+
+  @Column(name = "phone_verified", nullable = false)
+  private boolean phoneVerified;
+
+  @Column(nullable = false)
+  private boolean active;
+
+  @Column(name = "last_login_at", nullable = false)
+  private Instant lastLoginAt;
+
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
+  protected AppUserEntity() {}
+
+  public String getFirebaseUid() { return firebaseUid; }
+  public void setFirebaseUid(String firebaseUid) { this.firebaseUid = firebaseUid; }
+  public String getFirstName() { return firstName; }
+  public void setFirstName(String firstName) { this.firstName = firstName; }
+  public String getLastName() { return lastName; }
+  public void setLastName(String lastName) { this.lastName = lastName; }
+  public String getDisplayName() { return displayName; }
+  public void setDisplayName(String displayName) { this.displayName = displayName; }
+  public String getEmail() { return email; }
+  public void setEmail(String email) { this.email = email; }
+  public String getPhoneNumber() { return phoneNumber; }
+  public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+  public String getPhotoUrl() { return photoUrl; }
+  public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
+  public String getShoppingMode() { return shoppingMode; }
+  public void setShoppingMode(String shoppingMode) { this.shoppingMode = shoppingMode; }
+  public String getAccountType() { return accountType; }
+  public void setAccountType(String accountType) { this.accountType = accountType; }
+  public String getAuthProvider() { return authProvider; }
+  public void setAuthProvider(String authProvider) { this.authProvider = authProvider; }
+  public boolean isEmailVerified() { return emailVerified; }
+  public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+  public boolean isPhoneVerified() { return phoneVerified; }
+  public void setPhoneVerified(boolean phoneVerified) { this.phoneVerified = phoneVerified; }
+  public boolean isActive() { return active; }
+  public void setActive(boolean active) { this.active = active; }
+  public Instant getLastLoginAt() { return lastLoginAt; }
+  public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+  public Instant getCreatedAt() { return createdAt; }
+  public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+  public Instant getUpdatedAt() { return updatedAt; }
+  public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\user\AppUserRepository.java ================
+
+package com.farmtohome.api.user;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AppUserRepository extends JpaRepository<AppUserEntity, String> {}
+
+================ FILE: C:\Users\dell\StudioProjects\farm_to_home_app\backend\src\main\java\com\farmtohome\api\user\AppUserService.java ================
+
+package com.farmtohome.api.user;
+
+import com.farmtohome.api.common.ApiException;
+import com.google.firebase.auth.FirebaseToken;
+import java.time.Instant;
+import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class AppUserService {
+  private final AppUserRepository users;
+
+  public AppUserService(AppUserRepository users) {
+    this.users = users;
+  }
+
+  @Transactional
+  AppUserDtos.Profile sync(FirebaseToken token, AppUserDtos.SyncRequest request) {
+    String uid = text(token.getUid());
+    if (uid.isEmpty()) {
+      throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid login session.");
+    }
+
+    Instant now = Instant.now();
+    boolean created = !users.existsById(uid);
+    AppUserEntity user = users.findById(uid).orElseGet(AppUserEntity::new);
+    if (created) {
+      user.setFirebaseUid(uid);
+      user.setCreatedAt(now);
+      user.setActive(true);
+    }
+
+    String tokenEmail = claim(token, "email").toLowerCase();
+    String tokenPhone = claim(token, "phone_number");
+    String tokenName = claim(token, "name");
+    String firstName = preferred(request.firstName(), user.getFirstName());
+    String lastName = preferred(request.lastName(), user.getLastName());
+    String displayName = (firstName + " " + lastName).trim();
+    if (displayName.isEmpty()) displayName = preferred(tokenName, tokenEmail);
+
+    user.setFirstName(firstName);
+    user.setLastName(lastName);
+    user.setDisplayName(displayName);
+    user.setEmail(preferred(tokenEmail, user.getEmail()));
+    user.setPhoneNumber(preferred(tokenPhone, preferred(request.phoneNumber(), user.getPhoneNumber())));
+    user.setPhotoUrl(preferred(request.photoUrl(), preferred(claim(token, "picture"), user.getPhotoUrl())));
+    user.setShoppingMode(choice(request.shoppingMode(), user.getShoppingMode(), "home", "shop"));
+    user.setAccountType(choice(request.accountType(), user.getAccountType(), "customer", "shop_owner"));
+    user.setAuthProvider(provider(token));
+    user.setEmailVerified(booleanClaim(token, "email_verified"));
+    user.setPhoneVerified(!tokenPhone.isEmpty());
+    user.setActive(true);
+    user.setLastLoginAt(now);
+    user.setUpdatedAt(now);
+
+    try {
+      return AppUserDtos.Profile.from(users.saveAndFlush(user));
+    } catch (DataIntegrityViolationException error) {
+      throw new ApiException(
+          HttpStatus.CONFLICT,
+          "This email address or mobile number is already linked to another account.");
+    }
+  }
+
+  @Transactional(readOnly = true)
+  AppUserDtos.Profile get(String uid) {
+    return users.findById(uid)
+        .map(AppUserDtos.Profile::from)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User profile not found."));
+  }
+
+  private static String provider(FirebaseToken token) {
+    Object firebase = token.getClaims().get("firebase");
+    if (firebase instanceof Map<?, ?> values) {
+      return preferred(values.get("sign_in_provider"), "password");
+    }
+    return "password";
+  }
+
+  private static String claim(FirebaseToken token, String key) {
+    return text(token.getClaims().get(key));
+  }
+
+  private static boolean booleanClaim(FirebaseToken token, String key) {
+    Object value = token.getClaims().get(key);
+    return value instanceof Boolean flag ? flag : Boolean.parseBoolean(text(value));
+  }
+
+  private static String choice(Object requested, Object current, String first, String second) {
+    String value = text(requested).toLowerCase();
+    if (value.equals(first) || value.equals(second)) return value;
+    value = text(current).toLowerCase();
+    return value.equals(second) ? second : first;
+  }
+
+  private static String preferred(Object primary, Object fallback) {
+    String value = text(primary);
+    return value.isEmpty() ? text(fallback) : value;
+  }
+
+  private static String text(Object value) {
+    return value == null ? "" : value.toString().trim();
+  }
+}

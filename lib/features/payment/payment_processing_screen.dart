@@ -177,7 +177,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
         width: 132,
         height: 132,
         decoration: const BoxDecoration(
-          color: Color(0xFFEAF7EF),
+          color: Color(0xFFE8F5E9),
           shape: BoxShape.circle,
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -300,7 +300,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7EF),
+        color: const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
