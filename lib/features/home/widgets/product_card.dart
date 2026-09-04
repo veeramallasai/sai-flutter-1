@@ -136,8 +136,8 @@ class PremiumProductImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (path.trim().isEmpty) return const _ImageFallback();
     final Widget image = path.startsWith('http://') || path.startsWith('https://')
-        ? Image.network(path, width: double.infinity, height: double.infinity, fit: fit, cacheWidth: 350, cacheHeight: 350, errorBuilder: _error)
-        : Image.asset(path, width: double.infinity, height: double.infinity, fit: fit, cacheWidth: 350, cacheHeight: 350, errorBuilder: _error);
+        ? Image.network(path, width: double.infinity, height: double.infinity, fit: fit, errorBuilder: _error)
+        : Image.asset(path, width: double.infinity, height: double.infinity, fit: fit, errorBuilder: _error);
     return ClipRRect(borderRadius: BorderRadius.circular(17), child: image);
   }
 
