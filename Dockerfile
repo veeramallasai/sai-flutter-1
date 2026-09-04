@@ -1,0 +1,11 @@
+FROM debian:stable-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y curl git unzip xz-utils zip && rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/flutter/flutter.git -b stable /usr/local/flutter
+ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
+COPY . /app
+RUN flutter pub get
+RUN flutter build web --release --dart-define=API_BASE_URL=https://sai-backend-1-production.up.railway.app
+FROM nginx:alpine
+COPY --from=0 /app/build/web /usr/share/nginx/html
+EXPOSE 80
