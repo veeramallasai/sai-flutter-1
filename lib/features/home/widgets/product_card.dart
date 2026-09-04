@@ -26,27 +26,27 @@ class ProductQuantityControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double height = compact ? 32 : 36;
+    final double height = compact ? 34 : 38;
     if (quantity <= 0) {
       return SizedBox(
         height: height,
-        width: compact ? 60 : 72,
+        width: compact ? 64 : 72,
         child: FilledButton(
           onPressed: enabled && !loading ? onAdd : null,
           style: FilledButton.styleFrom(
             padding: EdgeInsets.zero,
             backgroundColor: const Color(0xFF1B5E20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: loading
               ? const SizedBox(
-                  width: 14,
-                  height: 14,
+                  width: 15,
+                  height: 15,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
               : const Text(
                   'ADD',
-                  style: TextStyle(fontSize: 10.5, letterSpacing: 0.3, fontWeight: FontWeight.w900),
+                  style: TextStyle(fontSize: 10, letterSpacing: 0.3, fontWeight: FontWeight.w900),
                 ),
         ),
       );
@@ -55,21 +55,21 @@ class ProductQuantityControl extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       height: height,
-      width: compact ? 86 : 108,
+      width: compact ? 103 : 112,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
         ),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x260B7A3E), blurRadius: 10, offset: Offset(0, 4)),
+          BoxShadow(color: Color(0x260B7A3E), blurRadius: 12, offset: Offset(0, 6)),
         ],
       ),
       child: loading
           ? const Center(
               child: SizedBox(
-                width: 14,
-                height: 14,
+                width: 15,
+                height: 15,
                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
               ),
             )
@@ -81,16 +81,16 @@ class ProductQuantityControl extends StatelessWidget {
                     onTap: enabled ? onDecrease : null,
                   ),
                 ),
-                Container(width: 1, height: 14, color: const Color(0x44FFFFFF)),
+                Container(width: 1, height: 16, color: const Color(0x44FFFFFF)),
                 SizedBox(
-                  width: compact ? 24 : 32,
+                  width: compact ? 29 : 34,
                   child: Text(
                     '$quantity',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
                   ),
                 ),
-                Container(width: 1, height: 14, color: const Color(0x44FFFFFF)),
+                Container(width: 1, height: 16, color: const Color(0x44FFFFFF)),
                 Expanded(
                   child: _StepButton(
                     icon: Icons.add_rounded,
@@ -136,8 +136,8 @@ class PremiumProductImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (path.trim().isEmpty) return const _ImageFallback();
     final Widget image = path.startsWith('http://') || path.startsWith('https://')
-        ? Image.network(path, width: double.infinity, height: double.infinity, fit: fit, errorBuilder: _error)
-        : Image.asset(path, width: double.infinity, height: double.infinity, fit: fit, errorBuilder: _error);
+        ? Image.network(path, width: double.infinity, height: double.infinity, fit: fit, cacheWidth: 350, cacheHeight: 350, errorBuilder: _error)
+        : Image.asset(path, width: double.infinity, height: double.infinity, fit: fit, cacheWidth: 350, cacheHeight: 350, errorBuilder: _error);
     return ClipRRect(borderRadius: BorderRadius.circular(17), child: image);
   }
 

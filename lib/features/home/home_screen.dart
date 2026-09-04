@@ -485,111 +485,103 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.sizeOf(context).width;
-    final bool desktop = screenWidth >= 950;
 
-    Widget mainContent = Column(
-      children: <Widget>[
-        PremiumHomeAppBar(child: _buildHeader(desktop: desktop)),
-        Expanded(
-          child: RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async {
-              await _loadShoppingMode();
-              await _productProvider.refresh();
-              await _loadAdminHomeContent();
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: <Widget>[
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    desktop ? 34 : 16,
-                    15,
-                    desktop ? 34 : 16,
-                    125,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate(<Widget>[
-                      ShoppingModeSelector(
-                        mode: _shoppingMode,
-                        onTap: _showShoppingModeSelector,
-                        child: _buildShoppingModeButton(),
-                      ),
-                      const SizedBox(height: 14),
-                      PremiumHomeSearchBar(
-                        onTap: () => _go('/search'),
-                        child: _buildSearchBar(),
-                      ),
-                      const SizedBox(height: 18),
-                      BannerSlider(
-                        itemCount: _banners.length,
-                        currentIndex: _currentBanner,
-                        indicator: _buildBannerIndicator(),
-                        child: _buildBannerCarousel(desktop: desktop),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildServiceStrip(),
-                      const SizedBox(height: 30),
-                      CategorySection(
-                        categories: _buildCategoryList(),
-                        onViewAll: () => _go('/categories'),
-                        header: _buildSectionHeader(
-                          title: 'Shop by category',
-                          subtitle: 'Fresh essentials, directly from trusted farms',
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      OfferSection(
-                        onTap: () => _go('/categories'),
-                        child: _buildSpecialOffer(),
-                      ),
-                      const SizedBox(height: 30),
-                      ProductSection(
-                        title: _shoppingMode == 'home'
-                            ? 'Fresh picks for you'
-                            : 'Wholesale favourites',
-                        subtitle: _shoppingMode == 'home'
-                            ? 'Fresh products for your everyday needs'
-                            : 'Popular bulk products for your business',
-                        products: _buildProducts(desktop: desktop),
-                        onViewAll: () => _go('/categories'),
-                        header: _buildSectionHeader(
-                          title: _shoppingMode == 'home'
-                              ? 'Fresh picks for you'
-                              : 'Wholesale favourites',
-                          subtitle: _shoppingMode == 'home'
-                              ? 'Fresh products for your everyday needs'
-                              : 'Popular bulk products for your business',
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      RecommendedSection(
-                        children: <Widget>[
-                          _buildTrustSection(),
-                          _buildDeliverySection(),
-                        ],
-                      ),
-                    ]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+    final bool desktop = screenWidth >= 950;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: desktop
-            ? Row(
-                children: <Widget>[
-                  _buildWebSidebar(),
-                  Expanded(child: mainContent),
-                ],
-              )
-            : mainContent,
+        child: Column(
+          children: <Widget>[
+            PremiumHomeAppBar(child: _buildHeader(desktop: desktop)),
+            Expanded(
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async {
+                  await _loadShoppingMode();
+                  await _productProvider.refresh();
+                  await _loadAdminHomeContent();
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: <Widget>[
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        desktop ? 34 : 16,
+                        15,
+                        desktop ? 34 : 16,
+                        125,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate(<Widget>[
+                          ShoppingModeSelector(
+                            mode: _shoppingMode,
+                            onTap: _showShoppingModeSelector,
+                            child: _buildShoppingModeButton(),
+                          ),
+                          const SizedBox(height: 14),
+                          PremiumHomeSearchBar(
+                            onTap: () => _go('/search'),
+                            child: _buildSearchBar(),
+                          ),
+                          const SizedBox(height: 18),
+                          BannerSlider(
+                            itemCount: _banners.length,
+                            currentIndex: _currentBanner,
+                            indicator: _buildBannerIndicator(),
+                            child: _buildBannerCarousel(desktop: desktop),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildServiceStrip(),
+                          const SizedBox(height: 30),
+                          CategorySection(
+                            categories: _buildCategoryList(),
+                            onViewAll: () => _go('/categories'),
+                            header: _buildSectionHeader(
+                              title: 'Shop by category',
+                              subtitle: 'Fresh essentials, directly from trusted farms',
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          OfferSection(
+                            onTap: () => _go('/categories'),
+                            child: _buildSpecialOffer(),
+                          ),
+                          const SizedBox(height: 30),
+                          ProductSection(
+                            title: _shoppingMode == 'home'
+                                ? 'Fresh picks for you'
+                                : 'Wholesale favourites',
+                            subtitle: _shoppingMode == 'home'
+                                ? 'Fresh products for your everyday needs'
+                                : 'Popular bulk products for your business',
+                            products: _buildProducts(desktop: desktop),
+                            onViewAll: () => _go('/categories'),
+                            header: _buildSectionHeader(
+                              title: _shoppingMode == 'home'
+                                  ? 'Fresh picks for you'
+                                  : 'Wholesale favourites',
+                              subtitle: _shoppingMode == 'home'
+                                  ? 'Fresh products for your everyday needs'
+                                  : 'Popular bulk products for your business',
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          RecommendedSection(
+                            children: <Widget>[
+                              _buildTrustSection(),
+                              _buildDeliverySection(),
+                            ],
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: ListenableBuilder(
         listenable: _cartProvider,
@@ -1188,151 +1180,6 @@ class _HomeScreenState extends State<HomeScreen>
                 color: AppColors.primary,
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWebSidebar() {
-    return Container(
-      width: 240,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: AppColors.border)),
-      ),
-      child: Column(
-        children: <Widget>[
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.eco_rounded, color: Colors.white, size: 22),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'FARM TO HOME',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 13,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      'Fresh Essentials',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
-          _sidebarItem(Icons.home_rounded, 'Home', true, () => _go('/home')),
-          _sidebarItem(Icons.grid_view_rounded, 'Categories', false, () => _go('/categories')),
-          _sidebarItem(
-            Icons.shopping_bag_outlined,
-            'Cart',
-            false,
-            () => _go('/cart'),
-            badge: _cartProvider.itemCount,
-          ),
-          _sidebarItem(Icons.receipt_long_rounded, 'Orders', false, () => _go('/orders')),
-          _sidebarItem(Icons.person_outline_rounded, 'Profile', false, () => _go('/profile')),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const Row(
-                    children: <Widget>[
-                      Icon(Icons.nature_people_rounded, color: AppColors.primary, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Direct Farm Supply',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 11.5,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '100% organic & farm fresh items delivered to your doorstep.',
-                    style: TextStyle(fontSize: 10, color: Colors.green.shade800, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sidebarItem(IconData icon, String label, bool active, VoidCallback onTap, {int badge = 0}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-      child: Material(
-        color: active ? const Color(0xFFE8F5E9) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            child: Row(
-              children: <Widget>[
-                Icon(icon, size: 20, color: active ? AppColors.primary : AppColors.textSecondary),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight: active ? FontWeight.w900 : FontWeight.w700,
-                      fontSize: 13,
-                      color: active ? AppColors.primary : AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                if (badge > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$badge',
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
-                    ),
-                  ),
-              ],
-            ),
           ),
         ),
       ),
