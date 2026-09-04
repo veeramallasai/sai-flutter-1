@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/auth/local_auth_session.dart';
+import '../../core/errors/network_exception.dart';
 import '../../core/network/api_client.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -297,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen>
                     ScaffoldMessenger.of(this.context).showSnackBar(
                       const SnackBar(
                         content: Text('Password updated successfully! Please click Login to continue.'),
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: _green,
                       ),
                     );
                   }
