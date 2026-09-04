@@ -26,27 +26,27 @@ class ProductQuantityControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double height = compact ? 34 : 38;
+    final double height = compact ? 32 : 36;
     if (quantity <= 0) {
       return SizedBox(
         height: height,
-        width: compact ? 64 : 72,
+        width: compact ? 60 : 72,
         child: FilledButton(
           onPressed: enabled && !loading ? onAdd : null,
           style: FilledButton.styleFrom(
             padding: EdgeInsets.zero,
             backgroundColor: const Color(0xFF1B5E20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: loading
               ? const SizedBox(
-                  width: 15,
-                  height: 15,
+                  width: 14,
+                  height: 14,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
               : const Text(
                   'ADD',
-                  style: TextStyle(fontSize: 10, letterSpacing: 0.3, fontWeight: FontWeight.w900),
+                  style: TextStyle(fontSize: 10.5, letterSpacing: 0.3, fontWeight: FontWeight.w900),
                 ),
         ),
       );
@@ -55,21 +55,21 @@ class ProductQuantityControl extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       height: height,
-      width: compact ? 103 : 112,
+      width: compact ? 86 : 108,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: <Color>[Color(0xFF1B5E20), Color(0xFF2E7D32)],
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x260B7A3E), blurRadius: 12, offset: Offset(0, 6)),
+          BoxShadow(color: Color(0x260B7A3E), blurRadius: 10, offset: Offset(0, 4)),
         ],
       ),
       child: loading
           ? const Center(
               child: SizedBox(
-                width: 15,
-                height: 15,
+                width: 14,
+                height: 14,
                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
               ),
             )
@@ -81,16 +81,16 @@ class ProductQuantityControl extends StatelessWidget {
                     onTap: enabled ? onDecrease : null,
                   ),
                 ),
-                Container(width: 1, height: 16, color: const Color(0x44FFFFFF)),
+                Container(width: 1, height: 14, color: const Color(0x44FFFFFF)),
                 SizedBox(
-                  width: compact ? 29 : 34,
+                  width: compact ? 24 : 32,
                   child: Text(
                     '$quantity',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
                   ),
                 ),
-                Container(width: 1, height: 16, color: const Color(0x44FFFFFF)),
+                Container(width: 1, height: 14, color: const Color(0x44FFFFFF)),
                 Expanded(
                   child: _StepButton(
                     icon: Icons.add_rounded,
