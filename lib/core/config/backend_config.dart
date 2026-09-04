@@ -10,16 +10,25 @@ class BackendConfig {
     defaultValue: '',
   );
 
+  static const String productionBaseUrl =
+      'https://farm-to-home-backend.up.railway.app';
+
   static String get baseUrl {
     if (_overrideBaseUrl.trim().isNotEmpty) {
       return _withoutTrailingSlash(_overrideBaseUrl.trim());
     }
     switch (EnvironmentConfig.current) {
       case AppEnvironment.production:
-        throw StateError('API_BASE_URL is required for a production build.');
+        return productionBaseUrl;
       case AppEnvironment.staging:
-        throw StateError('API_BASE_URL is required for a staging build.');
+        return productionBaseUrl;
       case AppEnvironment.development:
+        if (kIsWeb) {
+          final String host = Uri.base.host.toLowerCase();
+          if (host != 'localhost' && host != '127.0.0.1' && host.isNotEmpty) {
+            return productionBaseUrl;
+          }
+        }
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
           return 'http://10.0.2.2:8080';
         }

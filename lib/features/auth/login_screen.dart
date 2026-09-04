@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
     } catch (error) {
-      if (mounted) _showError('Unable to login. Check email/password and backend 8080.');
+      if (mounted) _showError('Unable to login. Please check your credentials or server connection.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
