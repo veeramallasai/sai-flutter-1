@@ -48,5 +48,41 @@ class BackendApiService {
     },
   );
 
+  Future<ApiResponse<dynamic>> sendPasswordSetupOtp(String email) =>
+      _client.post(
+        ApiEndpoints.passwordSetupSend(),
+        body: <String, dynamic>{'email': email},
+      );
+
+  Future<ApiResponse<dynamic>> verifyPasswordSetupOtp({
+    required String email,
+    required String otp,
+  }) => _client.post(
+    ApiEndpoints.passwordSetupVerify(),
+    body: <String, dynamic>{
+      'email': email,
+      'otp': otp,
+    },
+  );
+
+  Future<ApiResponse<dynamic>> confirmPasswordSetup({
+    required String email,
+    required String otp,
+    required String password,
+  }) => _client.post(
+    ApiEndpoints.passwordSetupConfirm(),
+    body: <String, dynamic>{
+      'email': email,
+      'otp': otp,
+      'password': password,
+    },
+  );
+
+  Future<ApiResponse<dynamic>> resendPasswordSetupOtp(String email) =>
+      _client.post(
+        ApiEndpoints.passwordSetupResend(),
+        body: <String, dynamic>{'email': email},
+      );
+
   void dispose() => _client.dispose();
 }
